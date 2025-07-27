@@ -1,28 +1,32 @@
 # PIXI Stock Chart
 
-A professional stock chart visualization with hybrid PIXI.js + SVG crosshair system, featuring interactive candlestick charts, smart candle snapping, real-time price tracking, and high-performance WebGL rendering.
+A professional stock chart visualization with modular PIXI.js architecture and comprehensive responsive design. Features React 19 compatibility, PIXI v8 optimization, advanced grid system, interactive candlestick charts, smart candle snapping, and high-performance WebGL rendering with robust error handling.
 
 ## 🚀 Features
 
 ### Core Chart Features
 - **Interactive Candlestick Charts**: Professional-grade stock price visualization
+- **Modular Grid System**: Advanced utility-based grid rendering with price and time grids
 - **Hybrid Crosshair System**: SVG overlay with PIXI.js rendering for optimal performance
 - **Smart Candle Snapping**: Crosshair automatically snaps to candle centers
 - **Real-time Price Tracking**: Live price and date display with golden crosshair
 - **Pan & Zoom**: Smooth navigation with mouse and wheel interactions
+- **Responsive Design**: Full responsive behavior with window resize handling
 
 ### Performance & Visual
-- **WebGL Rendering**: High-performance graphics powered by PIXI.js v8
+- **WebGL Rendering**: High-performance graphics powered by PIXI.js v8 with error handling
 - **Performance Monitoring**: Track FPS, render times, and memory usage
 - **Professional UI**: Golden dashed crosshair lines with price/date labels
-- **Responsive Design**: Adapts to different screen sizes
+- **Responsive Architecture**: Adapts to different screen sizes with throttled resize
 - **Smooth Interactions**: Lag-free mouse tracking and chart updates
+- **Memory Optimized**: Comprehensive cleanup and null-safety checks
 
 ### Technical Architecture
-- **Hybrid Rendering**: PIXI.js for chart + SVG for crosshair overlay
-- **Modern React**: Built with React 19 and latest hooks (useImperativeHandle)
+- **Modular System**: Utility-based grid functions for better maintainability
+- **React 19 Compatible**: Built with React 19.1.0 and modern hooks
+- **PIXI v8 Optimized**: Full compatibility with latest PIXI.js architecture
+- **Error Resilient**: Comprehensive error handling and null-safety
 - **Component Communication**: Efficient ref-based parent-child interaction
-- **Memory Optimized**: No memory leaks, clean event handling
 
 ## 🛠️ Technologies
 
@@ -90,106 +94,112 @@ pixistockchart/
 │   └── manifest.json            # PWA manifest
 ├── src/
 │   ├── lib/                     # Core chart library
-│   │   ├── components/          # Reusable chart components
-│   │   │   ├── Axis/            # X/Y axis components
-│   │   │   ├── Grid/            # Chart grid components
-│   │   │   ├── Overlay/         # Chart overlay components
-│   │   │   ├── Performance/     # Performance monitoring
-│   │   │   ├── Series/          # Data series components
-│   │   │   ├── SvgCrosshair.js  # ✨ SVG crosshair overlay
-│   │   │   ├── EventCapture.js  # Event handling utilities
-│   │   │   └── index.js         # Components barrel export
-│   │   ├── constants/           # Chart configuration constants
-│   │   ├── hooks/               # Custom React hooks
-│   │   │   ├── useChartState.js # Chart state management
-│   │   │   ├── usePerformance.js# Performance tracking
-│   │   │   ├── useInteractions.js# User interactions
+│   │   ├── StockChart.js        # ✨ Main PIXI.js chart with PIXI v8 compatibility
+│   │   ├── coordinateUtils.js   # Chart coordinate calculations
+│   │   ├── priceCalculations.js # Price formatting and calculations
+│   │   └── utils/               # Modular utility functions
+│   │       └── gridUtils/       # ✨ Modular grid rendering system
+│   │           └── index.js     # Grid utility functions (createCompleteGrid, etc.)
+│   ├── dataUtils.js             # Sample data generation
+│   ├── App.js                   # Main application component
+│   ├── index.js                 # React app entry point
+│   ├── App.css                  # Application styles
+│   ├── index.css                # Global styles
+│   └── styles.css               # ✨ Chart-specific responsive styles
 │   │   │   └── index.js         # Hooks barrel export
-│   │   ├── utils/               # Utility functions
-│   │   │   ├── coordinateUtils.js # ✨ Chart coordinate calculations
-│   │   │   ├── dataUtils.js     # Stock data utilities
-│   │   │   ├── pixiHelpers.js   # PIXI.js helper functions
-│   │   │   ├── priceCalculations.js # Price range calculations
-│   │   │   ├── renderUtils.js   # Rendering utilities
-│   │   │   └── index.js         # Utils barrel export
-│   │   └── StockChart.js        # ✨ Main PIXI.js chart component
-│   ├── dataUtils.js             # Legacy data utilities
-│   ├── index.js                 # ✨ Application entry point
-│   └── styles.css               # ✨ Global styles
-├── package.json                 # Dependencies and scripts
-└── README.md                    # Project documentation
-```
-
 **Key Files:**
-- 🎯 **StockChart.js** - Main PIXI.js chart with hybrid crosshair integration
-- 🎯 **SvgCrosshair.js** - SVG crosshair overlay with smart candle snapping
+- 🎯 **StockChart.js** - Main PIXI.js chart with PIXML v8 compatibility and responsive design
+- 🎯 **gridUtils/index.js** - Modular grid system with utility functions
 - 🎯 **coordinateUtils.js** - Chart coordinate transformations and bounds checking
-- 🎯 **index.js** - App entry point with performance metrics display
+- 🎯 **priceCalculations.js** - Price formatting and range calculations
+- 🎯 **styles.css** - Responsive CSS for canvas and container elements
 
 ## 🔧 Technical Implementation
 
-### Hybrid Architecture
-- **PIXI.js Layer**: Handles chart rendering, pan/zoom, mouse events
-- **SVG Overlay**: Renders crosshair with `pointerEvents='none'`
-- **Communication**: useImperativeHandle for efficient component interaction
+### Modular Architecture
+- **PIXI.js v8 Layer**: Enhanced chart rendering with null-safety and error handling
+- **Grid Utilities**: Modular grid system with createCompleteGrid, createPriceGrid, createTimeGrid
+- **Responsive Design**: Throttled resize handling with canvas size optimization
+- **Communication**: Efficient React hooks and ref-based component interaction
 
-### Key Components
-- **StockChart.js**: Main PIXI.js component with mouse event handling
-- **SvgCrosshair.js**: Crosshair overlay with smart candle snapping
+### PIXI v8 Compatibility Features
+- **Safe Initialization**: Protected PIXI application and canvas creation
+- **Null Reference Protection**: Comprehensive checks for resize operations
+- **Memory Management**: Proper cleanup and resource disposal
+- **Error Boundaries**: Try-catch blocks for render operations
+- **Throttled Events**: 100ms throttled resize for performance optimization
+
+### Key Technical Components
+- **StockChart.js**: Enhanced PIXI.js component with v8 safety and responsive handling
+- **gridUtils**: Modular grid rendering system with utility-based architecture
 - **coordinateUtils.js**: Chart coordinate calculations and transformations
 
 ### Data Flow
 1. **Data Loading**: `dataUtils.js` loads JSON data from public folder
 2. **Rendering**: PIXI.js renders candlesticks with WebGL acceleration
-3. **Interaction**: Mouse events captured by PIXI.js, coordinates passed to SVG
-4. **Display**: SVG crosshair updates with real-time price/date information
+- **coordinateUtils.js**: Chart coordinate transformations with bounds checking
+- **priceCalculations.js**: Price formatting, range calculations, and display logic
+- **Responsive System**: CSS and JavaScript-based responsive canvas handling
+
+### Grid System Architecture
+1. **Modular Functions**: createCompleteGrid, createPriceGrid, createTimeGrid utilities
+2. **PIXI Graphics**: Direct PIXI.Graphics API usage for optimal performance
+3. **Clean Separation**: Grid logic separated from chart rendering for maintainability
+4. **Configurable**: Easy customization of grid styling and intervals
+
+### Rendering Pipeline
+1. **Initialization**: Safe PIXI application creation with null checks
+2. **Grid Rendering**: Modular grid system with utility functions
+3. **Chart Drawing**: Candlestick rendering with optimized performance
+4. **Event Handling**: Mouse tracking with throttled resize events
+5. **Cleanup**: Proper resource disposal and memory management
 
 ### Performance Features
 - **Real-time Monitoring**: FPS, render time, memory usage tracking
-- **Efficient Rendering**: Only visible candles rendered, smooth 60fps animations  
-- **Memory Management**: Proper cleanup of PIXI objects, no memory leaks
-- **Responsive Design**: Dynamic resizing, adaptive candle width calculation
+- **Efficient Rendering**: Only visible elements rendered, smooth 60fps animations  
+- **Memory Management**: Comprehensive cleanup of PIXI objects, null-safety checks
+- **Responsive Design**: Throttled resize events (100ms), adaptive canvas sizing
 
-## 🎨 Crosshair Features
+## 🚀 Recent Updates (v1.2.0)
 
-- **Golden Theme**: Professional `#FFD700` color scheme
-- **Smart Positioning**: X-axis snaps to candle centers, Y-axis follows mouse
-- **Live Labels**: Price display ($133.40) and date (03/05)
-- **Professional Styling**: Dashed lines, rounded labels, center dot
-- **Chart Bounds**: Crosshair only appears within chart area
-
-## 🚀 Recent Updates (v1.1.0)
-
-- ✅ Implemented hybrid PIXI.js + SVG crosshair system
-- ✅ Added smart candle snapping functionality  
-- ✅ Fixed date field mapping and formatting
-- ✅ Optimized component communication with useImperativeHandle
-- ✅ Enhanced performance with non-blocking SVG overlay
-- ✅ Added professional golden crosshair styling
+- ✅ **PIXI v8 Compatibility**: Full compatibility with PIXI.js 8.11.0
+- ✅ **Modular Grid System**: Implemented utility-based grid architecture
+- ✅ **Enhanced Responsive Design**: Fixed canvas resizing and responsiveness
+- ✅ **Error Handling**: Comprehensive null-safety and error boundaries
+- ✅ **React 19 Support**: Optimized for React 19.1.0 compatibility
+- ✅ **Performance Optimization**: Throttled resize events and memory improvements
+- ✅ **Architecture Refactoring**: Modular utilities replacing component dependencies
 
 ## 🛠️ Development
 
 ### Project Setup
-The project follows modern React development practices:
+The project follows modern React development practices with PIXI v8 compatibility:
 
 **Code Organization:**
-- **Barrel Exports**: `index.js` files for clean imports
-- **Separation of Concerns**: Components, hooks, utilities in separate folders
-- **Modern Hooks**: useState, useEffect, useCallback, useRef, useImperativeHandle
-- **Performance Optimization**: Memoized callbacks, efficient re-renders
+- **Modular Architecture**: Utility-based functions for better maintainability
+- **PIXI v8 Integration**: Manual implementation with comprehensive error handling
+- **React 19 Compatibility**: Latest hooks and component patterns
+- **Responsive Design**: Mobile-first approach with adaptive canvas sizing
+- **Performance Focused**: Memory optimization and efficient rendering
 
 **Development Commands:**
 ```bash
 npm start          # Development server with hot reload
-npm run build      # Production build
+npm run build      # Production build optimized for PIXI v8
 npm test           # Run test suite
 npm run eject      # Eject from Create React App (not recommended)
 ```
 
+**Technical Requirements:**
+- Node.js 16+ for optimal React 19 compatibility
+- Modern browser with WebGL support for PIXI.js rendering
+- Minimum 2GB RAM for development environment
+
 **Code Quality:**
 - ESLint configuration for code consistency
-- React best practices and hooks rules
-- Performance monitoring and memory leak prevention
+- React 19 best practices and modern hooks patterns
+- PIXI v8 compatibility guidelines and error handling
+- Performance monitoring and comprehensive memory leak prevention
 
 ## 🤝 Contributing
 

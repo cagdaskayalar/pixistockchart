@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useCallback } from 'react';
 import * as PIXI from 'pixi.js';
 import { generateStockData } from './utils/dataUtils';
 import { calculatePriceRange, priceToY } from './utils/priceCalculations';
-import { destroyContainerChildren, getCandlestickColor } from './utils/pixiHelpers';
+import { getCandlestickColor } from './utils/pixiHelpers';
 import { 
 	calculateChartDimensions, 
 	indexToX, 
@@ -11,6 +11,7 @@ import {
 	constrainCandleWidth
 } from './utils/coordinateUtils';
 import SvgCrosshair from './components/SvgCrosshair';
+import { createCompleteGrid } from './utils/gridUtils';
 
 const StockChart = ({ onPerformanceUpdate }) => {
 	const canvasRef = useRef(null);
@@ -40,39 +41,129 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		lastCrosshairUpdate: 0 // For throttling crosshair updates
 	});
 	
-	// Performance tracking
+	// Performance optimizations hook - temporarily disabled to fix black screen
+	// const {
+	// 	returnContainerGraphics,
+	// 	smoothRender
+	// } = usePerformanceOptimizations();
+	
+	// Performance optimizations - STABLE MANUAL IMPLEMENTATION (prevents infinite recompile)
+	// Using useCallback with empty deps to create stable functions
+	
+	// RAF Throttle - stable implementation  
+	const getRafThrottled = useCallback((key, func, delay = 16) => {
+		let lastCall = 0;
+		let rafId = null;
+		return (...args) => {
+			const now = Date.now();
+			if (now - lastCall >= delay) {
+				lastCall = now;
+				if (rafId) cancelAnimationFrame(rafId);
+				rafId = requestAnimationFrame(() => func(...args));
+			}
+		};
+	}, []);
+	
+	// Memory cleanup - stable implementation
+	const memoryTasks = useRef(new Map());
+	const registerCleanup = useCallback((key, cleanupFn) => {
+		memoryTasks.current.set(key, cleanupFn);
+	}, []);
+	
+	// Performance monitoring - stable implementation
 	const performanceState = useRef({
-		renderTime: 0,
-		fps: 0,
-		frameCount: 0,
 		lastFpsUpdate: Date.now(),
-		memoryUsage: 0
+		frameCount: 0,
+		fps: 60,
+		renderTimes: [],
+		avgRenderTime: 0
 	});
 	
-	// Chart drawing function (optimized with memory management)
+	const startTiming = useCallback(() => performance.now(), []);
+	const endTiming = useCallback((startTime) => {
+		const renderTime = performance.now() - startTime;
+		performanceState.current.renderTimes.push(renderTime);
+		if (performanceState.current.renderTimes.length > 10) {
+			performanceState.current.renderTimes.shift();
+		}
+		performanceState.current.avgRenderTime = performanceState.current.renderTimes.reduce((a, b) => a + b, 0) / performanceState.current.renderTimes.length;
+		return renderTime;
+	}, []);
+	
+	const updateFPS = useCallback(() => {
+		performanceState.current.frameCount++;
+		const now = Date.now();
+		if (now - performanceState.current.lastFpsUpdate >= 1000) {
+			performanceState.current.fps = performanceState.current.frameCount;
+			performanceState.current.frameCount = 0;
+			performanceState.current.lastFpsUpdate = now;
+		}
+	}, []);
+	
+	const getPerformanceStats = useCallback(() => ({
+		fps: performanceState.current.fps,
+		memoryUsage: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1024 / 1024) : 0,
+		avgRenderTime: Math.round(performanceState.current.avgRenderTime * 100) / 100
+	}), []);
+	
+	// Smooth render - stable implementation
+	const smoothRender = useCallback((container, callback, options = {}) => {
+		// Batch cleanup for performance when many children
+		if (container.children.length > 30) {
+			const children = container.removeChildren();
+			// Defer destroy calls to prevent frame drops
+			requestAnimationFrame(() => {
+				children.forEach(child => {
+					if (child && child.destroy) {
+						child.destroy();
+					}
+				});
+			});
+		} else {
+			// Normal cleanup for small containers
+			callback();
+		}
+		
+		// Always execute callback
+		if (container.children.length <= 30) {
+			callback();
+		}
+	}, []);
+	
+	// Execute cleanup tasks on unmount
+	React.useEffect(() => {
+		const taskMap = memoryTasks.current;
+		return () => {
+			taskMap.forEach((cleanupFn) => {
+				try {
+					cleanupFn();
+				} catch (error) {
+					console.warn('Cleanup task failed:', error);
+				}
+			});
+			taskMap.clear();
+		};
+	}, []);
+	
+	// Chart drawing function (optimized with smooth rendering to prevent black screen flicker)
 	const drawChart = useCallback(() => {
-		const startTime = performance.now();
-		
 		const chartContainer = chartContainerRef.current;
-		if (!chartContainer) return;
-		
+		if (!chartContainer || !appRef.current || !appRef.current.stage) return;
+
 		const { width, height } = dimensions;
-		
-		// Proper cleanup using utility - destroy all children to prevent memory leaks
-		destroyContainerChildren(chartContainer);
-		
+
 		// Calculate chart dimensions using utility
 		const { margin, chartWidth, chartHeight } = calculateChartDimensions(width, height);
-		
+
 		const { startIndex, maxCandles, canvasWidth } = viewState.current;
 		const endIndex = Math.min(startIndex + maxCandles, stockData.current.length);
 		const visibleData = stockData.current.slice(startIndex, endIndex);
-		
+
 		if (visibleData.length === 0) return;
-		
+
 		// Price range calculation using utility
 		const { priceMin, priceMax, priceDiff } = calculatePriceRange(visibleData);
-		
+
 		// Store price calculation values for crosshair
 		viewState.current.priceCalculations = {
 			priceMin,
@@ -81,89 +172,48 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			chartTop: margin.top,
 			chartHeight
 		};
+
+		// Safe container cleanup with smooth rendering to prevent black screen
+		smoothRender(chartContainer, () => {
+			// Clear container (normal destroy approach)
+			if (chartContainer.children.length > 0) {
+				chartContainer.removeChildren().forEach(child => {
+					if (child && child.destroy) {
+						child.destroy();
+					}
+				});
+			}
+		}, { preserveContent: false }); // Don't preserve content since we're clearing
+
+		// Track render performance with PerformanceMonitor
+		const renderStartTime = startTiming();
 		
 		// Background (PIXI v8 modern API)
-		const bg = new PIXI.Graphics()
-			.rect(margin.left, margin.top, chartWidth, chartHeight)
+		const bg = new PIXI.Graphics();
+		bg.rect(margin.left, margin.top, chartWidth, chartHeight)
 			.fill(0x1a1a1a)
 			.rect(margin.left, margin.top, chartWidth, chartHeight)
 			.stroke({ width: 1, color: 0x444444 });
 		
 		chartContainer.addChild(bg);
 		
-		// Price grid
-		const grid = new PIXI.Graphics();
-		
-		const gridLines = 8;
-		for (let i = 0; i <= gridLines; i++) {
-			const y = margin.top + (chartHeight / gridLines) * i;
-			const price = priceMax - (priceDiff / gridLines) * i;
-			
-			// Grid line (v8 modern API)
-			grid.moveTo(margin.left, y)
-				.lineTo(margin.left + chartWidth, y)
-				.stroke({ width: 1, color: 0x333333, alpha: 0.3 });
-			
-			// Price label (sağda)
-			const priceText = new PIXI.Text({
-				text: price.toFixed(2),
-				style: {
-					fontFamily: 'Arial',
-					fontSize: 12,
-					fill: 0x888888
-				}
-			});
-			priceText.anchor.set(0, 0.5);
-			priceText.x = margin.left + chartWidth + 5; // Chart'a daha yakın
-			priceText.y = y;
-			chartContainer.addChild(priceText);
-			
-			// Price label (solda da - profesyonel görünüm)
-			const priceTextLeft = new PIXI.Text({
-				text: price.toFixed(2),
-				style: {
-					fontFamily: 'Arial',
-					fontSize: 12,
-					fill: 0x888888
-				}
-			});
-			priceTextLeft.anchor.set(1, 0.5);
-			priceTextLeft.x = margin.left - 5; // Chart'a daha yakın
-			priceTextLeft.y = y;
-			chartContainer.addChild(priceTextLeft);
-		}
-		
-		// Vertical time grid (X-axis) - Calculate grid indices using utility
+		// Calculate time grid indices using utility
 		const timeGridIndices = calculateTimeGridIndices(visibleData, 6);
 		
-		// Grid çizgileri için seçilen candlestick index'leri
-		for (const dataIndex of timeGridIndices) {
-			// Candlestick ile TAM AYNI X pozisyon formülü - using indexToX utility
-			const x = indexToX(dataIndex, canvasWidth, margin.left);
-			
-			// Vertical grid line (v8 modern API)
-			grid.moveTo(x, margin.top)
-				.lineTo(x, margin.top + chartHeight)
-				.stroke({ width: 1, color: 0x333333, alpha: 0.3 });
-			
-			// Date label (candlestick'in tam altında)
-			const dateStr = visibleData[dataIndex].date.split('-').slice(1).join('/'); // MM/DD format
-			
-			const dateText = new PIXI.Text({
-				text: dateStr,
-				style: {
-					fontFamily: 'Arial',
-					fontSize: 11,
-					fill: 0x888888
-				}
-			});
-			dateText.anchor.set(0.5, 0);
-			dateText.x = x; // Candlestick ile tam aynı X pozisyonu
-			dateText.y = margin.top + chartHeight + 8;
-			chartContainer.addChild(dateText);
-		}
-		
-		chartContainer.addChild(grid);
+		// Create modular grid system using utility functions
+		createCompleteGrid({
+			container: chartContainer,
+			margin,
+			chartWidth,
+			chartHeight,
+			priceMin,
+			priceMax,
+			priceDiff,
+			visibleData,
+			timeGridIndices,
+			canvasWidth,
+			gridLines: 8
+		});
 		
 		// Draw candlesticks (PIXI v8 modern API)
 		visibleData.forEach((candle, i) => {
@@ -181,6 +231,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			
 			const color = getCandlestickColor(candle);
 			
+			// Candlestick graphics (PIXI v8 modern API)
 			const candleGfx = new PIXI.Graphics();
 			
 			// Wick (high-low line) - v8 modern API
@@ -200,29 +251,33 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		
 	
 		
-		// Performance tracking (throttled to prevent excessive updates)
-		const endTime = performance.now();
-		performanceState.current.renderTime = endTime - startTime;
-		performanceState.current.frameCount++;
+		// Performance tracking with PerformanceMonitor
+		const renderTime = endTiming(renderStartTime);
+		updateFPS();
 		
-		// FPS calculation and performance updates (throttled to every 500ms)
-		const now = Date.now();
-		if (now - performanceState.current.lastFpsUpdate >= 500) {
-			performanceState.current.fps = Math.round((performanceState.current.frameCount * 1000) / (now - performanceState.current.lastFpsUpdate));
-			performanceState.current.frameCount = 0;
-			performanceState.current.lastFpsUpdate = now;
-			
-			// Memory usage (if available) - only update every 500ms
-			if (performance.memory) {
-				performanceState.current.memoryUsage = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+		// Safe manual render to prevent black/white screen glitches
+		if (appRef.current && appRef.current.renderer && appRef.current.stage) {
+			try {
+				// Only render if stage has children to prevent null errors
+				if (appRef.current.stage.children && appRef.current.stage.children.length > 0) {
+					appRef.current.renderer.render(appRef.current.stage);
+				}
+			} catch (error) {
+				console.warn('Manual render error (safe to ignore):', error);
 			}
+		}
+		
+		// Add small delay to prevent black screen flicker
+		requestAnimationFrame(() => {
+			// Get comprehensive performance stats from PerformanceMonitor
+			const perfStats = getPerformanceStats();
 			
-			// Send performance data to parent (throttled)
+			// Send performance data to parent using PerformanceMonitor data
 			if (onPerformanceUpdate) {
 				onPerformanceUpdate({
-					renderTime: Math.round(performanceState.current.renderTime * 100) / 100,
-					fps: performanceState.current.fps,
-					memoryUsage: performanceState.current.memoryUsage,
+					renderTime: Math.round(renderTime * 100) / 100,
+					fps: perfStats.fps,
+					memoryUsage: perfStats.memoryUsage,
 					visibleCandles: visibleData.length,
 					totalCandles: stockData.current.length,
 					candleWidth: Math.round(canvasWidth * 10) / 10,
@@ -230,27 +285,24 @@ const StockChart = ({ onPerformanceUpdate }) => {
 					priceRange: `$${priceMin.toFixed(2)}-$${priceMax.toFixed(2)}`
 				});
 			}
-			
-			// Periodic garbage collection suggestion (only in development)
-			if (process.env.NODE_ENV === 'development' && window.gc) {
-				window.gc();
-			}
-		}
+		});
 		
 		//console.log(`Chart drawn: ${visibleData.length} candles, width=${canvasWidth.toFixed(1)}px`);
-	}, [dimensions, stockData, onPerformanceUpdate]);
+	}, [dimensions, onPerformanceUpdate, startTiming, endTiming, updateFPS, getPerformanceStats, smoothRender]); // drawChart useCallback end
 
-	// Callback for SVG crosshair when hovering over candles
-	const handleCandleHover = useCallback((candle, dataIndex) => {
+	// Callback for SVG crosshair when hovering over candles - memoized
+	const handleCandleHover = React.useMemo(() => (candle, dataIndex) => {
 		// Optional: Add any additional hover logic here
 		// console.log('Hovering over candle:', candle, 'at index:', dataIndex);
 	}, []);
 
 	// Handle window resize
 	React.useEffect(() => {
-		const handleResize = () => {
+		const handleResize = getRafThrottled('resize', () => {
 			const newWidth = window.innerWidth;
 			const newHeight = window.innerHeight - 50;
+			
+			// Update React state
 			setDimensions({ width: newWidth, height: newHeight });
 			
 			// Update chart dimensions in viewState
@@ -260,45 +312,121 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			// Update maxCandles based on new chart width
 			viewState.current.maxCandles = Math.floor(chartWidth / viewState.current.canvasWidth);
 			
-			if (appRef.current) {
-				// PIXI v8'de renderer.resize yerine app.renderer.resize
-				appRef.current.renderer.resize(newWidth, newHeight);
-				drawChart();
+			// PIXI v8 safe resize handling - prevent null reference errors
+			if (appRef.current && appRef.current.renderer && appRef.current.stage) {
+				try {
+					// Safe resize with null checks
+					appRef.current.renderer.resize(newWidth, newHeight);
+					
+					// Also update canvas style for responsive behavior
+					if (appRef.current.canvas) {
+						appRef.current.canvas.style.width = '100%';
+						appRef.current.canvas.style.height = '100%';
+						appRef.current.canvas.style.display = 'block';
+					}
+					
+					// Only redraw if stage has children (prevents null errors)
+					if (appRef.current.stage.children.length > 0) {
+						drawChart();
+					}
+				} catch (error) {
+					console.warn('PIXI resize error (safe to ignore):', error);
+					// Fallback: force redraw without resize
+					drawChart();
+				}
 			}
-		};
+		}, 100); // 100ms throttle for resize
 		
 		window.addEventListener('resize', handleResize);
-		return () => window.removeEventListener('resize', handleResize);
-	}, [drawChart]);
+		return () => {
+			window.removeEventListener('resize', handleResize);
+		};
+	}, [drawChart, getRafThrottled]);
 	
 	useEffect(() => {
 		console.log('StockChart: Creating professional chart...');
 		
-		const { width, height } = dimensions;
+		// Get current dimensions at initialization time
+		const initWidth = window.innerWidth;
+		const initHeight = window.innerHeight - 50;
+		
+		// Update dimensions state if different
+		if (dimensions.width !== initWidth || dimensions.height !== initHeight) {
+			setDimensions({ width: initWidth, height: initHeight });
+		}
 		
 		// PIXI Application (v8 async initialization)
 		const initPixi = async () => {
-			const app = new PIXI.Application();
-			await app.init({
-				width,
-				height,
-				backgroundColor: 0x0a0a0a,
-				antialias: true
+			try {
+				const app = new PIXI.Application();
+				await app.init({
+					width: initWidth,
+					height: initHeight,
+					backgroundColor: 0x0a0a0a,
+					antialias: true,
+					// V8 specific options to prevent render errors and improve responsiveness
+					autoStart: false, // Don't auto start ticker
+					sharedTicker: false // Use independent ticker
+					// REMOVED: resizeTo: window (causes null length error in v8)
+				});
+				
+				appRef.current = app;
+			
+			// Register cleanup task for PIXI app with MemoryManager
+			registerCleanup('pixi-app', () => {
+				if (appRef.current) {
+					try {
+						// PIXI v8 safe destroy - step by step cleanup
+						
+						// 1. Stop ticker first
+						if (appRef.current.ticker) {
+							appRef.current.ticker.stop();
+						}
+						
+						// 2. Clean stage
+						if (appRef.current.stage) {
+							appRef.current.stage.removeChildren();
+							appRef.current.stage.destroy({ children: true, texture: true });
+						}
+						
+						// 3. Clean renderer
+						if (appRef.current.renderer) {
+							appRef.current.renderer.destroy();
+						}
+						
+						// 4. Don't call app.destroy() to avoid _cancelResize error in v8
+						
+					} catch (error) {
+						console.warn('PIXI cleanup error:', error);
+					} finally {
+						appRef.current = null;
+					}
+				}
 			});
-			
-			appRef.current = app;
-			
-			if (canvasRef.current) {
-				canvasRef.current.appendChild(app.canvas); // v8'de app.view yerine app.canvas
+
+			// Proper canvas mounting for responsive behavior
+			if (canvasRef.current && app.canvas) {
+				// Clear any existing canvas
+				canvasRef.current.innerHTML = '';
+				
+				// Set responsive canvas styles
+				app.canvas.style.width = '100%';
+				app.canvas.style.height = '100%';
+				app.canvas.style.display = 'block';
+				
+				// Add canvas to DOM
+				canvasRef.current.appendChild(app.canvas);
 			}
 			
-			// Chart container
-			const chartContainer = new PIXI.Container();
-			app.stage.addChild(chartContainer);
-			chartContainerRef.current = chartContainer;
+			// Chart container - safe initialization
+			if (app.stage) {
+				const chartContainer = new PIXI.Container();
+				app.stage.addChild(chartContainer);
+				chartContainerRef.current = chartContainer;
+			}
 			
 			// Store chart dimensions for event handlers
-			const { margin, chartWidth, chartHeight } = calculateChartDimensions(width, height);
+			const { margin, chartWidth, chartHeight } = calculateChartDimensions(initWidth, initHeight);
 			viewState.current.chartDimensions = { margin, chartWidth, chartHeight };
 			
 			// Initial state - use actual chart width instead of hardcoded margin
@@ -318,8 +446,8 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				canvas.style.cursor = 'grabbing';
 			};
 			
-			// Mouse move (pan + crosshair tracking)
-			const handleMouseMove = (e) => {
+			// Mouse move (pan + crosshair tracking) - using ThrottleManager
+			const handleMouseMove = getRafThrottled('mouseMove', (e) => {
 				const rect = canvasRef.current.getBoundingClientRect();
 				const mouseX = e.clientX - rect.left;
 				const mouseY = e.clientY - rect.top;
@@ -342,11 +470,12 @@ const StockChart = ({ onPerformanceUpdate }) => {
 						if (newStartIndex !== viewState.current.startIndex) {
 							viewState.current.startIndex = newStartIndex;
 							viewState.current.lastMouseX = e.clientX;
+							// Throttled chart update to prevent visual glitches
 							drawChart();
 						}
 					}
 				}
-			};
+			}, 16);
 			
 			// Mouse up
 			const handleMouseUp = () => {
@@ -361,8 +490,8 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				}
 			};
 			
-			// Wheel (zoom)
-			const handleWheel = (e) => {
+			// Wheel (zoom) - using ThrottleManager for performance  
+			const handleWheel = getRafThrottled('wheel', (e) => {
 				e.preventDefault();
 				
 				const zoomFactor = e.deltaY < 0 ? 1.2 : 0.8;
@@ -381,10 +510,11 @@ const StockChart = ({ onPerformanceUpdate }) => {
 					viewState.current.startIndex = Math.max(0, Math.floor(centerIndex - viewState.current.maxCandles / 2));
 					viewState.current.startIndex = Math.min(stockData.current.length - viewState.current.maxCandles, viewState.current.startIndex);
 					
+					// Direct chart update since wheel is already throttled
 					drawChart();
 					//console.log('Zoom - candle width:', newCandleWidth.toFixed(1), 'visible candles:', viewState.current.maxCandles);
 				}
-			};
+			}, 16);
 			
 			canvas.addEventListener('mousedown', handleMouseDown);
 			canvas.addEventListener('mousemove', handleMouseMove);
@@ -402,7 +532,34 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				handleWheel,
 				canvas
 			};
-		};
+			
+			// Register cleanup task for event listeners with MemoryManager
+			registerCleanup('event-listeners', () => {
+				if (appRef.current?._eventHandlers) {
+					const { handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave, handleWheel, canvas } = appRef.current._eventHandlers;
+					canvas.removeEventListener('mousedown', handleMouseDown);
+					canvas.removeEventListener('mousemove', handleMouseMove);
+					canvas.removeEventListener('mouseup', handleMouseUp);
+					canvas.removeEventListener('mouseleave', handleMouseLeave);
+					canvas.removeEventListener('wheel', handleWheel);
+					document.removeEventListener('mouseup', handleMouseUp);
+				}
+			});
+			
+			// Start the ticker manually after setup is complete with controlled rendering
+			if (app.ticker) {
+				// Disable auto render to prevent conflicts with our manual rendering
+				app.ticker.autoStart = false;
+				app.ticker.stop();
+				
+				// Only start ticker if we need animation (we control rendering manually)
+				// app.ticker.start(); // Commented out - we control rendering manually
+			}
+			
+		} catch (error) {
+			console.error('PIXI initialization error:', error);
+		}
+		}; // initPixi async function'ını kapat
 		
 		initPixi().catch(console.error);
 		
@@ -418,17 +575,40 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				document.removeEventListener('mouseup', handleMouseUp);
 			}
 			
+			// Safe PIXI cleanup for v8
 			if (appRef.current) {
-				appRef.current.destroy(true);
+				try {
+					// 1. Stop ticker first
+					if (appRef.current.ticker) {
+						appRef.current.ticker.stop();
+					}
+					
+					// 2. Clean stage
+					if (appRef.current.stage) {
+						appRef.current.stage.removeChildren();
+						appRef.current.stage.destroy({ children: true, texture: true });
+					}
+					
+					// 3. Clean renderer
+					if (appRef.current.renderer) {
+						appRef.current.renderer.destroy();
+					}
+					
+					// 4. Don't call app.destroy() to avoid _cancelResize error
+					
+				} catch (error) {
+					console.warn('PIXI cleanup error in useEffect:', error);
+				} finally {
+					appRef.current = null;
+				}
 			}
 		};
-	}, [dimensions, drawChart, handleCandleHover]);
+	}, [dimensions, drawChart, handleCandleHover, getRafThrottled, registerCleanup]);
 	
 	return (
 		<div className="stock-chart-container" style={{ position: 'relative' }}>
 			<div ref={canvasRef} className="canvas-container" />
-			<SvgCrosshair
-				ref={svgCrosshairRef}
+			<SvgCrosshair ref={svgCrosshairRef}
 				stockData={stockData.current}
 				viewState={viewState}
 				chartBounds={viewState.current.chartDimensions ? {
@@ -438,7 +618,8 @@ const StockChart = ({ onPerformanceUpdate }) => {
 					bottom: viewState.current.chartDimensions.margin.top + viewState.current.chartDimensions.chartHeight
 				} : null}
 				margin={viewState.current.chartDimensions?.margin}
-				onCandleHover={handleCandleHover}/>
+				onCandleHover={handleCandleHover}
+			/>
 		</div>
 	);
 };

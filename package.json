@@ -1,7 +1,7 @@
 {
   "name": "pixistockchart",
-  "version": "1.1.0",
-  "description": "Professional stock chart visualization with hybrid PIXI.js + SVG crosshair system. Features interactive candlestick charts, smart candle snapping, real-time price tracking, pan/zoom capabilities, and smooth WebGL rendering.",
+  "version": "1.2.0",
+  "description": "Professional stock chart visualization with modular PIXI.js architecture. Features responsive design, advanced grid system, PIXI v8 compatibility, interactive candlestick charts, smart candle snapping, real-time price tracking, and high-performance WebGL rendering with comprehensive error handling.",
   "author": {
     "name": "Mehmet Çağdaş Kayalarlıoğulları",
     "email": "cagdaskaya@hotmail.com"
@@ -14,7 +14,9 @@
   },
   "keywords": [
     "react",
+    "react-19",
     "pixi.js",
+    "pixi-v8",
     "stock-chart",
     "candlestick",
     "webgl",
@@ -24,7 +26,12 @@
     "crosshair",
     "svg-overlay",
     "hybrid-rendering",
-    "candle-snapping"
+    "candle-snapping",
+    "responsive-design",
+    "modular-architecture",
+    "grid-system",
+    "error-handling",
+    "performance-optimization"
   ],
   "private": false,
   "dependencies": {
