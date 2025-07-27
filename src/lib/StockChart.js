@@ -7,22 +7,33 @@ import { getCandlestickColor } from './utils/pixiHelpers';
 import { 
 	calculateChartDimensions, 
 	indexToX, 
-	calculateTimeGridIndices, 
+	calculateTimeGridIndices,
 	calculateCandleBodyWidth,
 	constrainCandleWidth
 } from './utils/coordinateUtils';
 import SvgCrosshair from './components/SvgCrosshair';
-import { createCompleteGrid } from './utils/gridUtils';
+import SvgYAxis from './components/SvgYAxis';
+import SvgXAxis from './components/SvgXAxis';
+import SvgGrid from './components/SvgGrid';
+import { createChartBackground } from './utils/gridUtils';
+import { useResizeObserver, calculateAxisDimensions } from './hooks/useResponsiveAxis';
 
 const StockChart = ({ onPerformanceUpdate }) => {
 	const canvasRef = useRef(null);
 	const appRef = useRef(null);
 	const chartContainerRef = useRef(null);
 	const svgCrosshairRef = useRef(null); // SVG crosshair reference
+	const svgYAxisRef = useRef(null); // SVG Y-axis reference
+	const svgXAxisRef = useRef(null); // SVG X-axis reference
+	const svgGridRef = useRef(null); // SVG grid reference
 	
 	// Stock data state for async loading
 	const stockData = useRef(null);
 	const [dataLoaded, setDataLoaded] = useState(false);
+	
+	// Responsive axis dimensions
+	const containerDimensions = useResizeObserver(chartContainerRef);
+	const [axisDimensions, setAxisDimensions] = useState({ yAxisWidth: 50, xAxisHeight: 25 });
 	
 	// Load real data from JSON
 	useEffect(() => {
@@ -77,6 +88,40 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		maxCandles: 50,
 		lastCrosshairUpdate: 0 // For throttling crosshair updates
 	});
+	
+	// Calculate dynamic axis dimensions based on data and container size
+	useEffect(() => {
+		if (!dataLoaded || !stockData.current || !containerDimensions.width) return;
+		
+		// Get visible data for label calculation
+		const { startIndex, maxCandles } = viewState.current;
+		const endIndex = Math.min(startIndex + maxCandles, stockData.current.length);
+		const visibleData = stockData.current.slice(startIndex, endIndex);
+		
+		// Calculate price range for label generation
+		const priceCalculations = calculatePriceRange(visibleData);
+		if (!priceCalculations || priceCalculations.priceDiff === 0) return;
+		
+		// Generate price labels
+		const priceLabels = [];
+		const gridLines = 8;
+		for (let i = 0; i <= gridLines; i++) {
+			const price = priceCalculations.priceMax - (priceCalculations.priceDiff / gridLines) * i;
+			priceLabels.push(price.toFixed(2));
+		}
+		
+		// Generate time labels (simplified)
+		const timeLabels = ['11 Tem', '12 Tem', '13 Tem']; // Örnek değerler
+		
+		// Calculate dynamic axis dimensions
+		const newAxisDimensions = calculateAxisDimensions(
+			priceLabels, 
+			timeLabels, 
+			containerDimensions
+		);
+		
+		setAxisDimensions(newAxisDimensions);
+	}, [dataLoaded, containerDimensions, viewState.current?.startIndex]);
 	
 	// Performance optimizations hook - temporarily disabled to fix black screen
 	// const {
@@ -195,8 +240,8 @@ const StockChart = ({ onPerformanceUpdate }) => {
 
 		const { width, height } = dimensions;
 
-		// Calculate chart dimensions using utility
-		const { margin, chartWidth, chartHeight } = calculateChartDimensions(width, height);
+		// Calculate chart dimensions using utility with dynamic axis dimensions
+		const { margin, chartWidth, chartHeight } = calculateChartDimensions(width, height, {}, axisDimensions);
 
 		const { startIndex, maxCandles, canvasWidth } = viewState.current;
 		const endIndex = Math.min(startIndex + maxCandles, stockData.current.length);
@@ -231,33 +276,12 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		// Track render performance with PerformanceMonitor
 		const renderStartTime = startTiming();
 		
-		// Background (PIXI v8 modern API)
-		const bg = new PIXI.Graphics();
-		bg.rect(margin.left, margin.top, chartWidth, chartHeight)
-			.fill(0x1a1a1a)
-			.rect(margin.left, margin.top, chartWidth, chartHeight)
-			.stroke({ width: 1, color: 0x444444 });
-		
-		chartContainer.addChild(bg);
-		
-		// Calculate time grid indices using utility
-		const timeGridIndices = calculateTimeGridIndices(visibleData, 6);
-		
-		// Create modular grid system using utility functions
-		createCompleteGrid({
+		// Create only background (no grid - SVG handles grid now)
+		createChartBackground({
 			container: chartContainer,
 			margin,
 			chartWidth,
-			chartHeight,
-			priceMin,
-			priceMax,
-			priceDiff,
-			visibleData,
-			timeGridIndices,
-			canvasWidth,
-			gridLines: 8,
-			totalWidth: width,   // Tam ekran genişliği
-			totalHeight: height  // Tam ekran yüksekliği
+			chartHeight
 		});
 		
 		// Draw candlesticks (PIXI v8 modern API) - Grid ile hizalanmış pozisyonlar
@@ -333,7 +357,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		});
 		
 		//console.log(`Chart drawn: ${visibleData.length} candles, width=${canvasWidth.toFixed(1)}px`);
-	}, [dimensions, onPerformanceUpdate, startTiming, endTiming, updateFPS, getPerformanceStats, smoothRender, dataLoaded]); // drawChart useCallback end
+	}, [dimensions, axisDimensions, onPerformanceUpdate, startTiming, endTiming, updateFPS, getPerformanceStats, smoothRender, dataLoaded]); // drawChart useCallback end
 
 	// Callback for SVG crosshair when hovering over candles - memoized
 	const handleCandleHover = React.useMemo(() => (candle, dataIndex) => {
@@ -351,7 +375,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			setDimensions({ width: newWidth, height: newHeight });
 			
 			// Update chart dimensions in viewState
-			const { margin, chartWidth, chartHeight } = calculateChartDimensions(newWidth, newHeight);
+			const { margin, chartWidth, chartHeight } = calculateChartDimensions(newWidth, newHeight, {}, axisDimensions);
 			viewState.current.chartDimensions = { margin, chartWidth, chartHeight };
 			
 			// Update maxCandles based on new chart width
@@ -386,7 +410,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		return () => {
 			window.removeEventListener('resize', handleResize);
 		};
-	}, [drawChart, getRafThrottled]);
+	}, [drawChart, getRafThrottled, axisDimensions]);
 	
 	useEffect(() => {
 		console.log('StockChart: Creating professional chart...');
@@ -471,7 +495,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			}
 			
 			// Store chart dimensions for event handlers
-			const { margin, chartWidth, chartHeight } = calculateChartDimensions(initWidth, initHeight);
+			const { margin, chartWidth, chartHeight } = calculateChartDimensions(initWidth, initHeight, {}, axisDimensions);
 			viewState.current.chartDimensions = { margin, chartWidth, chartHeight };
 			
 			// Initial state - use actual chart width instead of hardcoded margin
@@ -648,7 +672,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				}
 			}
 		};
-	}, [dimensions, drawChart, handleCandleHover, getRafThrottled, registerCleanup]);
+	}, [dimensions, axisDimensions, drawChart, handleCandleHover, getRafThrottled, registerCleanup]);
 	
 	// Redraw chart when data is loaded
 	useEffect(() => {
@@ -677,6 +701,84 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				</div>
 			)}
 			<div ref={canvasRef} className="canvas-container" />
+			
+			{/* SVG Grid (Background grid pattern) */}
+			{dataLoaded && viewState.current.priceCalculations && stockData.current && viewState.current.chartDimensions && (
+				<SvgGrid 
+					ref={svgGridRef}
+					chartBounds={viewState.current.chartDimensions ? {
+						left: viewState.current.chartDimensions.margin.left,
+						top: viewState.current.chartDimensions.margin.top,
+						right: viewState.current.chartDimensions.margin.left + viewState.current.chartDimensions.chartWidth,
+						bottom: viewState.current.chartDimensions.margin.top + viewState.current.chartDimensions.chartHeight
+					} : null}
+					priceMin={viewState.current.priceCalculations.priceMin}
+					priceMax={viewState.current.priceCalculations.priceMax}
+					priceDiff={viewState.current.priceCalculations.priceDiff}
+					visibleData={(() => {
+						const { startIndex, maxCandles } = viewState.current;
+						const endIndex = Math.min(startIndex + maxCandles, stockData.current.length);
+						return stockData.current.slice(startIndex, endIndex);
+					})()}
+					timeGridIndices={(() => {
+						const { startIndex, maxCandles } = viewState.current;
+						const endIndex = Math.min(startIndex + maxCandles, stockData.current.length);
+						const visibleData = stockData.current.slice(startIndex, endIndex);
+						return calculateTimeGridIndices(visibleData, 6);
+					})()}
+					canvasWidth={viewState.current.canvasWidth}
+					gridLines={8}
+					showGrid={true}
+				/>
+			)}
+			
+			{/* SVG Y-Axis (Price labels) */}
+			{dataLoaded && viewState.current.priceCalculations && (
+				<SvgYAxis 
+					ref={svgYAxisRef}
+					chartBounds={viewState.current.chartDimensions ? {
+						left: viewState.current.chartDimensions.margin.left,
+						top: viewState.current.chartDimensions.margin.top,
+						right: viewState.current.chartDimensions.margin.left + viewState.current.chartDimensions.chartWidth,
+						bottom: viewState.current.chartDimensions.margin.top + viewState.current.chartDimensions.chartHeight
+					} : null}
+					priceMin={viewState.current.priceCalculations.priceMin}
+					priceMax={viewState.current.priceCalculations.priceMax}
+					priceDiff={viewState.current.priceCalculations.priceDiff}
+					gridLines={8}
+					showGrid={true}
+					width={axisDimensions.yAxisWidth}
+				/>
+			)}
+			
+			{/* SVG X-Axis (Time labels) */}
+			{dataLoaded && stockData.current && viewState.current.chartDimensions && (
+				<SvgXAxis 
+					ref={svgXAxisRef}
+					chartBounds={viewState.current.chartDimensions ? {
+						left: viewState.current.chartDimensions.margin.left,
+						top: viewState.current.chartDimensions.margin.top,
+						right: viewState.current.chartDimensions.margin.left + viewState.current.chartDimensions.chartWidth,
+						bottom: viewState.current.chartDimensions.margin.top + viewState.current.chartDimensions.chartHeight
+					} : null}
+					visibleData={(() => {
+						const { startIndex, maxCandles } = viewState.current;
+						const endIndex = Math.min(startIndex + maxCandles, stockData.current.length);
+						return stockData.current.slice(startIndex, endIndex);
+					})()}
+					timeGridIndices={(() => {
+						const { startIndex, maxCandles } = viewState.current;
+						const endIndex = Math.min(startIndex + maxCandles, stockData.current.length);
+						const visibleData = stockData.current.slice(startIndex, endIndex);
+						return calculateTimeGridIndices(visibleData, 6);
+					})()}
+					canvasWidth={viewState.current.canvasWidth}
+					showGrid={true}
+					height={axisDimensions.xAxisHeight}
+				/>
+			)}
+			
+			{/* SVG Crosshair */}
 			<SvgCrosshair ref={svgCrosshairRef}
 				stockData={stockData.current}
 				viewState={viewState}

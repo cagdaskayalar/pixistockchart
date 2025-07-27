@@ -7,10 +7,12 @@
  * @param {number} width - Total width
  * @param {number} height - Total height
  * @param {Object} customMargins - Custom margin overrides
+ * @param {Object} axisDimensions - Dynamic axis dimensions { yAxisWidth, xAxisHeight }
  * @returns {Object} Margin and dimension calculations
  */
-export const calculateChartDimensions = (width, height, customMargins = {}) => {
-	const defaultMargins = { top: 0, right: 50, bottom: 25, left: 0 }; // Full-screen: left=0, no left Y-axis
+export const calculateChartDimensions = (width, height, customMargins = {}, axisDimensions = {}) => {
+	const { yAxisWidth = 50, xAxisHeight = 25 } = axisDimensions;
+	const defaultMargins = { top: 0, right: yAxisWidth, bottom: xAxisHeight, left: 0 }; // Dynamic margins
 	const margin = { ...defaultMargins, ...customMargins };
 	
 	return {

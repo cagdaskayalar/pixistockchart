@@ -170,7 +170,7 @@ const SvgCrosshair = forwardRef(({
 							fill="#000"
 							fontWeight="bold"
 						>
-							${crosshair.price.toFixed(2)}
+							{crosshair.price.toFixed(2)}
 						</text>
 					</g>
 

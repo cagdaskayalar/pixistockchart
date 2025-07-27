@@ -1,6 +1,6 @@
 # PIXI Stock Chart
 
-A professional Turkish-localized stock chart visualization with modular PIXI.js architecture and comprehensive responsive design. Features professional trading chart behavior (latest-data-first display), Turkish date/time formatting, React 19 compatibility, PIXI v8 optimization, advanced grid system, interactive candlestick charts, smart candle snapping, and high-performance WebGL rendering with robust error handling.
+A professional Turkish-localized stock chart visualization with modular PIXI.js architecture and comprehensive responsive design. Features professional trading chart behavior (latest-data-first display), Turkish date/time formatting, React 19 compatibility, PIXI v8 optimization, advanced SVG-based grid system, dynamic axis sizing, interactive candlestick charts, smart candle snapping, and high-performance WebGL rendering with robust error handling.
 
 ## 🚀 Features
 
@@ -10,25 +10,30 @@ A professional Turkish-localized stock chart visualization with modular PIXI.js 
   - X-axis: Turkish month names (16 Tem, 15 Haz, etc.)
   - CrossHair: 24-hour time format (HH:MM)
 - **Interactive Candlestick Charts**: Professional-grade stock price visualization
-- **Modular Grid System**: Advanced utility-based grid rendering with price and time grids
+- **SVG-Based Grid System**: Professional trading chart grid patterns with major/minor lines
+- **Dynamic Axis Sizing**: Responsive axis dimensions based on content and container size
 - **Hybrid Crosshair System**: SVG overlay with PIXI.js rendering for optimal performance
 - **Smart Candle Snapping**: Crosshair automatically snaps to candle centers
 - **Real-time Price Tracking**: Live price and date display with golden crosshair
 - **Pan & Zoom**: Smooth navigation with mouse and wheel interactions
-- **Responsive Design**: Full responsive behavior with window resize handling
+- **Fully Responsive Design**: Eliminated hardcoded dimensions, adaptive to all screen sizes
 
 ### Performance & Visual
 - **WebGL Rendering**: High-performance graphics powered by PIXI.js v8 with error handling
 - **Performance Monitoring**: Track FPS, render times, and memory usage
-- **Professional UI**: Golden dashed crosshair lines with price/date labels
-- **Responsive Architecture**: Adapts to different screen sizes with throttled resize
+- **Professional Grid Pattern**: SVG-based grid system with major/minor lines like professional trading platforms
+- **Dynamic Text Measurement**: Canvas-based text sizing for precise axis dimensions
+- **Responsive Architecture**: Adapts to different screen sizes with throttled resize and dynamic axis sizing
 - **Smooth Interactions**: Lag-free mouse tracking and chart updates
 - **Memory Optimized**: Comprehensive cleanup and null-safety checks
 
 ### Technical Architecture
 - **Modular System**: Utility-based grid functions for better maintainability
+- **Responsive Hook System**: Custom useResizeObserver and useResponsiveAxis hooks
+- **Dynamic Sizing**: Eliminated hardcoded axis dimensions with Canvas-based text measurement
 - **React 19 Compatible**: Built with React 19.1.0 and modern hooks
 - **PIXI v8 Optimized**: Full compatibility with latest PIXI.js architecture
+- **SVG Integration**: Advanced SVG pattern-based grid system
 - **Error Resilient**: Comprehensive error handling and null-safety
 - **Component Communication**: Efficient ref-based parent-child interaction
 
@@ -42,6 +47,8 @@ A professional Turkish-localized stock chart visualization with modular PIXI.js 
 
 **Architecture:**
 - **Hybrid Rendering** - PIXI.js WebGL + SVG overlay for optimal performance
+- **Responsive System** - Dynamic axis sizing with ResizeObserver and Canvas text measurement
+- **SVG Grid Patterns** - Professional trading chart grid system with major/minor lines
 - **Modern React Patterns** - Hooks, refs, imperative handles, memoization
 - **Component Architecture** - Modular, reusable chart components
 - **Performance Optimized** - Memory management, efficient rendering, FPS monitoring
@@ -102,13 +109,19 @@ pixistockchart/
 │   └── manifest.json            # PWA manifest
 ├── src/
 │   ├── lib/                     # Core chart library
-│   │   ├── StockChart.js        # ✨ Main PIXI.js chart with Turkish localization & professional behavior
+│   │   ├── StockChart.js        # ✨ Main PIXI.js chart with Turkish localization & responsive design
 │   │   ├── components/          # Chart components
-│   │   │   └── SvgCrosshair.js  # ✨ Turkish-localized crosshair with 24h time format
+│   │   │   ├── SvgCrosshair.js  # ✨ Turkish-localized crosshair with 24h time format
+│   │   │   ├── SvgXAxis.js      # ✨ Dynamic X-axis with responsive sizing and SVG grid
+│   │   │   ├── SvgYAxis.js      # ✨ Dynamic Y-axis with responsive sizing and SVG grid
+│   │   │   └── SvgGrid.js       # ✨ Professional SVG grid pattern system
+│   │   ├── hooks/               # Custom React hooks
+│   │   │   ├── useResponsiveAxis.js # ✨ Responsive axis sizing with ResizeObserver
+│   │   │   └── index.js         # Hooks barrel export
 │   │   └── utils/               # Modular utility functions
 │   │       ├── gridUtils/       # ✨ Modular grid system with Turkish date formatting
 │   │       │   └── index.js     # Grid utilities (Turkish month names, etc.)
-│   │       ├── coordinateUtils.js # Chart coordinate calculations
+│   │       ├── coordinateUtils.js # ✨ Chart coordinate calculations with dynamic margins
 │   │       ├── priceCalculations.js # Price formatting and calculations
 │   │       ├── dataUtils.js     # Mock data generation
 │   │       └── pixiHelpers.js   # PIXI.js utility functions
@@ -118,12 +131,13 @@ pixistockchart/
 │   ├── App.css                  # Application styles
 │   ├── index.css                # Global styles
 │   └── styles.css               # ✨ Chart-specific responsive styles
-│   │   │   └── index.js         # Hooks barrel export
+
 **Key Files:**
-- 🎯 **StockChart.js** - Main PIXI.js chart with Turkish localization and professional trading behavior
-- 🎯 **SvgCrosshair.js** - Turkish-localized crosshair component with 24-hour time format
-- 🎯 **gridUtils/index.js** - Modular grid system with Turkish month names and date formatting
-- 🎯 **coordinateUtils.js** - Chart coordinate transformations and bounds checking
+- 🎯 **StockChart.js** - Main PIXI.js chart with responsive design and Turkish localization
+- 🎯 **useResponsiveAxis.js** - Custom hook for dynamic axis sizing with ResizeObserver
+- 🎯 **SvgXAxis.js & SvgYAxis.js** - Dynamic axis components with responsive sizing
+- 🎯 **SvgGrid.js** - Professional SVG grid pattern system
+- 🎯 **coordinateUtils.js** - Chart coordinate transformations with dynamic margins
 - 🎯 **priceCalculations.js** - Price formatting and range calculations
 - 🎯 **styles.css** - Responsive CSS for canvas and container elements
 
@@ -143,8 +157,10 @@ pixistockchart/
 
 ### Modular Architecture
 - **PIXI.js v8 Layer**: Enhanced chart rendering with null-safety and error handling
-- **Grid Utilities**: Modular grid system with createCompleteGrid, createPriceGrid, createTimeGrid
-- **Responsive Design**: Throttled resize handling with canvas size optimization
+- **SVG Grid System**: Professional trading chart grid patterns with major/minor lines
+- **Responsive Hook System**: useResizeObserver and useResponsiveAxis for dynamic sizing
+- **Dynamic Text Measurement**: Canvas API-based text sizing for precise axis dimensions
+- **Responsive Design**: Eliminated hardcoded values, adaptive to all screen sizes
 - **Communication**: Efficient React hooks and ref-based component interaction
 
 ### PIXI v8 Compatibility Features
@@ -155,37 +171,57 @@ pixistockchart/
 - **Throttled Events**: 100ms throttled resize for performance optimization
 
 ### Key Technical Components
-- **StockChart.js**: Enhanced PIXI.js component with v8 safety and responsive handling
-- **gridUtils**: Modular grid rendering system with utility-based architecture
-- **coordinateUtils.js**: Chart coordinate calculations and transformations
+- **StockChart.js**: Enhanced PIXI.js component with responsive design and Turkish localization
+- **useResponsiveAxis.js**: Custom hook with ResizeObserver and Canvas-based text measurement
+- **SvgXAxis/SvgYAxis**: Dynamic axis components with responsive sizing
+- **SvgGrid.js**: Professional SVG pattern-based grid system
+- **coordinateUtils.js**: Chart coordinate calculations with dynamic margins
 
 ### Data Flow
 1. **Data Loading**: `dataUtils.js` loads JSON data from public folder
-2. **Rendering**: PIXI.js renders candlesticks with WebGL acceleration
+2. **Responsive Calculation**: `useResponsiveAxis.js` calculates dynamic axis dimensions
+3. **Rendering**: PIXI.js renders candlesticks with WebGL acceleration
+4. **SVG Grid Overlay**: Professional grid patterns with major/minor lines
+5. **Dynamic Layout**: Responsive margins and sizing based on content measurement
 - **coordinateUtils.js**: Chart coordinate transformations with bounds checking
 - **priceCalculations.js**: Price formatting, range calculations, and display logic
 - **Responsive System**: CSS and JavaScript-based responsive canvas handling
 
 ### Grid System Architecture
-1. **Modular Functions**: createCompleteGrid, createPriceGrid, createTimeGrid utilities
-2. **PIXI Graphics**: Direct PIXI.Graphics API usage for optimal performance
+1. **SVG Pattern System**: Professional trading chart grid patterns with major/minor lines
+2. **Dynamic Spacing**: Grid intervals adapt to chart dimensions and zoom level
 3. **Clean Separation**: Grid logic separated from chart rendering for maintainability
-4. **Configurable**: Easy customization of grid styling and intervals
+4. **Professional Design**: Matches industry-standard trading platform appearance
 
 ### Rendering Pipeline
 1. **Initialization**: Safe PIXI application creation with null checks
-2. **Grid Rendering**: Modular grid system with utility functions
-3. **Chart Drawing**: Candlestick rendering with optimized performance
-4. **Event Handling**: Mouse tracking with throttled resize events
-5. **Cleanup**: Proper resource disposal and memory management
+2. **Responsive Calculation**: Dynamic axis sizing based on content and container
+3. **SVG Grid Rendering**: Professional trading chart grid patterns
+4. **Chart Drawing**: Candlestick rendering with optimized performance
+5. **Event Handling**: Mouse tracking with responsive resize events
+6. **Cleanup**: Proper resource disposal and memory management
 
 ### Performance Features
 - **Real-time Monitoring**: FPS, render time, memory usage tracking
-- **Efficient Rendering**: Only visible elements rendered, smooth 60fps animations  
+- **Efficient Rendering**: Only visible elements rendered, smooth 60fps animations
+- **Responsive System**: Dynamic axis sizing with Canvas-based text measurement
 - **Memory Management**: Comprehensive cleanup of PIXI objects, null-safety checks
-- **Responsive Design**: Throttled resize events (100ms), adaptive canvas sizing
+- **Adaptive Design**: Eliminates hardcoded dimensions, scales to any screen size
 
-## 🚀 Recent Updates (v1.2.0)
+## 🚀 Recent Updates (v1.3.0)
+
+- ✅ **Fully Responsive Design**: Eliminated all hardcoded axis dimensions (50px/25px)
+- ✅ **Dynamic Axis Sizing**: Canvas-based text measurement for precise dimensions
+- ✅ **ResizeObserver Integration**: Real-time container size tracking
+- ✅ **SVG Grid Pattern System**: Professional trading chart grid with major/minor lines
+- ✅ **Responsive Hook Architecture**: Custom useResizeObserver and useResponsiveAxis hooks
+- ✅ **Dynamic Margin Calculation**: Adaptive chart margins based on content
+- ✅ **Professional Grid Design**: Industry-standard trading platform appearance
+- ✅ **Canvas Text Measurement**: Precise text sizing without DOM manipulation
+- ✅ **Modular Component System**: Separated axis components with dynamic props
+- ✅ **Performance Optimized**: Efficient responsive calculations and rendering
+
+### Previous Updates (v1.2.0)
 
 - ✅ **PIXI v8 Compatibility**: Full compatibility with PIXI.js 8.11.0
 - ✅ **Modular Grid System**: Implemented utility-based grid architecture
@@ -202,9 +238,10 @@ The project follows modern React development practices with PIXI v8 compatibilit
 
 **Code Organization:**
 - **Modular Architecture**: Utility-based functions for better maintainability
+- **Responsive System**: Dynamic axis sizing with ResizeObserver and Canvas measurement
+- **SVG Integration**: Professional grid patterns with major/minor lines
 - **PIXI v8 Integration**: Manual implementation with comprehensive error handling
 - **React 19 Compatibility**: Latest hooks and component patterns
-- **Responsive Design**: Mobile-first approach with adaptive canvas sizing
 - **Performance Focused**: Memory optimization and efficient rendering
 
 **Development Commands:**
@@ -223,6 +260,7 @@ npm run eject      # Eject from Create React App (not recommended)
 **Code Quality:**
 - ESLint configuration for code consistency
 - React 19 best practices and modern hooks patterns
+- Responsive design patterns with dynamic sizing
 - PIXI v8 compatibility guidelines and error handling
 - Performance monitoring and comprehensive memory leak prevention
 
