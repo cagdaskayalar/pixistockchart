@@ -59,21 +59,30 @@ const SvgCrosshair = forwardRef(({
 				// Snap to candle center for X coordinate
 				const candleX = margin.left + (dataIndex * viewState.current.canvasWidth) + (viewState.current.canvasWidth / 2);
 				
-				// Tarih formatını düzelt - 'date' field'ını kullan
+				// Crosshair için sadece HH:MM formatı
 				let formattedTime = 'N/A';
 				try {
-					if (candle.date) {
-						// Date string'i parse et ve formatla
-						const dateObj = new Date(candle.date);
-						if (!isNaN(dateObj.getTime())) {
-							// Sadece tarih göster (MM/DD format)
-							formattedTime = dateObj.toLocaleDateString('en-US', { 
-								month: '2-digit', 
-								day: '2-digit' 
+					const dateValue = candle.date;
+					if (dateValue instanceof Date) {
+						// Real data: Date object from JSON - sadece saat:dakika
+						formattedTime = dateValue.toLocaleTimeString('tr-TR', { 
+							hour: '2-digit',
+							minute: '2-digit',
+							hour12: false // 24 saat formatı
+						});
+					} else if (typeof dateValue === 'string') {
+						// Mock data: string format
+						if (dateValue.includes('T')) {
+							// ISO format: "2025-02-10T10:09:00"
+							const date = new Date(dateValue);
+							formattedTime = date.toLocaleTimeString('tr-TR', { 
+								hour: '2-digit',
+								minute: '2-digit',
+								hour12: false // 24 saat formatı
 							});
 						} else {
-							// Eğer parse edilemezse raw date'i göster
-							formattedTime = candle.date;
+							// Old format: "2024-01-01" - sadece index göster
+							formattedTime = `#${startIndex + dataIndex}`;
 						}
 					} else {
 						// Date yoksa index numarası göster

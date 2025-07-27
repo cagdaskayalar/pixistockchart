@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import * as PIXI from 'pixi.js';
+import { getData } from '../dataUtils';
 import { generateStockData } from './utils/dataUtils';
 import { calculatePriceRange, priceToY } from './utils/priceCalculations';
 import { getCandlestickColor } from './utils/pixiHelpers';
@@ -19,11 +20,47 @@ const StockChart = ({ onPerformanceUpdate }) => {
 	const chartContainerRef = useRef(null);
 	const svgCrosshairRef = useRef(null); // SVG crosshair reference
 	
-	// Memoize stock data to prevent regeneration
+	// Stock data state for async loading
 	const stockData = useRef(null);
-	if (!stockData.current) {
-		stockData.current = generateStockData(2000);
-	}
+	const [dataLoaded, setDataLoaded] = useState(false);
+	
+	// Load real data from JSON
+	useEffect(() => {
+		const loadData = async () => {
+			try {
+				console.log('Loading stock data from JSON...');
+				// Real JSON data from src/dataUtils.js
+				const data = await getData();
+				stockData.current = data;
+				
+				// Set startIndex to show the latest data (professional behavior)
+				// Show last 150 candles or available data length if less
+				const maxCandlesToShow = 72;
+				const dataLength = data.length;
+				viewState.current.startIndex = Math.max(0, dataLength - maxCandlesToShow);
+				
+				setDataLoaded(true);
+				console.log('Stock data loaded:', data.length, 'candles');
+				console.log('Starting from index:', viewState.current.startIndex, '(showing latest data)');
+			} catch (error) {
+				console.error('Error loading stock data:', error);
+				// Fallback to mock data if needed
+				const fallbackData = generateStockData(2000);
+				stockData.current = fallbackData;
+				
+				// Set startIndex for fallback data too
+				const maxCandlesToShow = 72;
+				const dataLength = fallbackData.length;
+				viewState.current.startIndex = Math.max(0, dataLength - maxCandlesToShow);
+				
+				setDataLoaded(true);
+			}
+		};
+		
+		if (!stockData.current) {
+			loadData();
+		}
+	}, []);
 	
 	// Dynamic dimensions
 	const [dimensions, setDimensions] = React.useState({
@@ -149,6 +186,12 @@ const StockChart = ({ onPerformanceUpdate }) => {
 	const drawChart = useCallback(() => {
 		const chartContainer = chartContainerRef.current;
 		if (!chartContainer || !appRef.current || !appRef.current.stage) return;
+		
+		// Check if data is loaded
+		if (!stockData.current || !dataLoaded) {
+			console.log('Waiting for data to load...');
+			return;
+		}
 
 		const { width, height } = dimensions;
 
@@ -212,12 +255,14 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			visibleData,
 			timeGridIndices,
 			canvasWidth,
-			gridLines: 8
+			gridLines: 8,
+			totalWidth: width,   // Tam ekran genişliği
+			totalHeight: height  // Tam ekran yüksekliği
 		});
 		
-		// Draw candlesticks (PIXI v8 modern API)
+		// Draw candlesticks (PIXI v8 modern API) - Grid ile hizalanmış pozisyonlar
 		visibleData.forEach((candle, i) => {
-			// X position using indexToX utility (but here i is local index, not data index)
+			// X position using indexToX utility - Grid sistemine uyumlu
 			const x = indexToX(i, canvasWidth, margin.left);
 			
 			// Calculate candle body width using utility
@@ -288,7 +333,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		});
 		
 		//console.log(`Chart drawn: ${visibleData.length} candles, width=${canvasWidth.toFixed(1)}px`);
-	}, [dimensions, onPerformanceUpdate, startTiming, endTiming, updateFPS, getPerformanceStats, smoothRender]); // drawChart useCallback end
+	}, [dimensions, onPerformanceUpdate, startTiming, endTiming, updateFPS, getPerformanceStats, smoothRender, dataLoaded]); // drawChart useCallback end
 
 	// Callback for SVG crosshair when hovering over candles - memoized
 	const handleCandleHover = React.useMemo(() => (candle, dataIndex) => {
@@ -605,8 +650,32 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		};
 	}, [dimensions, drawChart, handleCandleHover, getRafThrottled, registerCleanup]);
 	
+	// Redraw chart when data is loaded
+	useEffect(() => {
+		if (dataLoaded && stockData.current) {
+			console.log('Data loaded, redrawing chart...');
+			// Small delay to ensure PIXI is ready
+			setTimeout(() => {
+				drawChart();
+			}, 100);
+		}
+	}, [dataLoaded, drawChart]);
+	
 	return (
 		<div className="stock-chart-container" style={{ position: 'relative' }}>
+			{!dataLoaded && (
+				<div style={{
+					position: 'absolute',
+					top: '50%',
+					left: '50%',
+					transform: 'translate(-50%, -50%)',
+					color: '#888',
+					fontSize: '16px',
+					zIndex: 1000
+				}}>
+					Loading stock data...
+				</div>
+			)}
 			<div ref={canvasRef} className="canvas-container" />
 			<SvgCrosshair ref={svgCrosshairRef}
 				stockData={stockData.current}

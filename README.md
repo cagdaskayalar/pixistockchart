@@ -1,10 +1,14 @@
 # PIXI Stock Chart
 
-A professional stock chart visualization with modular PIXI.js architecture and comprehensive responsive design. Features React 19 compatibility, PIXI v8 optimization, advanced grid system, interactive candlestick charts, smart candle snapping, and high-performance WebGL rendering with robust error handling.
+A professional Turkish-localized stock chart visualization with modular PIXI.js architecture and comprehensive responsive design. Features professional trading chart behavior (latest-data-first display), Turkish date/time formatting, React 19 compatibility, PIXI v8 optimization, advanced grid system, interactive candlestick charts, smart candle snapping, and high-performance WebGL rendering with robust error handling.
 
 ## 🚀 Features
 
 ### Core Chart Features
+- **Professional Trading Behavior**: Latest-data-first display like professional trading platforms
+- **Turkish Localization**: Native Turkish date/time formatting (tr-TR locale)
+  - X-axis: Turkish month names (16 Tem, 15 Haz, etc.)
+  - CrossHair: 24-hour time format (HH:MM)
 - **Interactive Candlestick Charts**: Professional-grade stock price visualization
 - **Modular Grid System**: Advanced utility-based grid rendering with price and time grids
 - **Hybrid Crosshair System**: SVG overlay with PIXI.js rendering for optimal performance
@@ -75,12 +79,16 @@ npm start
 The chart loads stock data from `/public/data/YKBNK_Min1.json` containing:
 - **Time-series data**: Daily OHLC (Open, High, Low, Close) prices
 - **Volume information**: Trading volume for each period
-- **Date formatting**: Automatic date parsing and display (MM/DD format)
+- **Turkish Date formatting**: Automatic date parsing with Turkish month names (tr-TR locale)
+- **Professional Display**: Shows latest 72 candles by default (configurable)
+- **Latest-First Behavior**: Chart starts from most recent data like professional trading platforms
 
 ### Customization
 - Modify `dataUtils.js` to change data source or add new data providers
 - Adjust crosshair styling in `SvgCrosshair.js` (colors, opacity, line styles)
 - Configure chart dimensions and margins in `coordinateUtils.js`
+- Change Turkish localization settings in `gridUtils/index.js` and `SvgCrosshair.js`
+- Adjust default candle count (72) and professional behavior in `StockChart.js`
 
 ## 📁 Project Structure
 
@@ -94,12 +102,16 @@ pixistockchart/
 │   └── manifest.json            # PWA manifest
 ├── src/
 │   ├── lib/                     # Core chart library
-│   │   ├── StockChart.js        # ✨ Main PIXI.js chart with PIXI v8 compatibility
-│   │   ├── coordinateUtils.js   # Chart coordinate calculations
-│   │   ├── priceCalculations.js # Price formatting and calculations
+│   │   ├── StockChart.js        # ✨ Main PIXI.js chart with Turkish localization & professional behavior
+│   │   ├── components/          # Chart components
+│   │   │   └── SvgCrosshair.js  # ✨ Turkish-localized crosshair with 24h time format
 │   │   └── utils/               # Modular utility functions
-│   │       └── gridUtils/       # ✨ Modular grid rendering system
-│   │           └── index.js     # Grid utility functions (createCompleteGrid, etc.)
+│   │       ├── gridUtils/       # ✨ Modular grid system with Turkish date formatting
+│   │       │   └── index.js     # Grid utilities (Turkish month names, etc.)
+│   │       ├── coordinateUtils.js # Chart coordinate calculations
+│   │       ├── priceCalculations.js # Price formatting and calculations
+│   │       ├── dataUtils.js     # Mock data generation
+│   │       └── pixiHelpers.js   # PIXI.js utility functions
 │   ├── dataUtils.js             # Sample data generation
 │   ├── App.js                   # Main application component
 │   ├── index.js                 # React app entry point
@@ -108,11 +120,24 @@ pixistockchart/
 │   └── styles.css               # ✨ Chart-specific responsive styles
 │   │   │   └── index.js         # Hooks barrel export
 **Key Files:**
-- 🎯 **StockChart.js** - Main PIXI.js chart with PIXML v8 compatibility and responsive design
-- 🎯 **gridUtils/index.js** - Modular grid system with utility functions
+- 🎯 **StockChart.js** - Main PIXI.js chart with Turkish localization and professional trading behavior
+- 🎯 **SvgCrosshair.js** - Turkish-localized crosshair component with 24-hour time format
+- 🎯 **gridUtils/index.js** - Modular grid system with Turkish month names and date formatting
 - 🎯 **coordinateUtils.js** - Chart coordinate transformations and bounds checking
 - 🎯 **priceCalculations.js** - Price formatting and range calculations
 - 🎯 **styles.css** - Responsive CSS for canvas and container elements
+
+## 🇹🇷 Turkish Localization Features
+
+### Date & Time Formatting
+- **X-axis Labels**: Turkish month abbreviations (Oca, Şub, Mar, Nis, May, Haz, Tem, Ağu, Eyl, Eki, Kas, Ara)
+- **CrossHair Time**: 24-hour format display (HH:MM) using tr-TR locale
+- **Professional Format**: Day + Turkish month format (e.g., "16 Tem", "15 Haz")
+
+### Professional Trading Behavior
+- **Latest-First Display**: Chart shows most recent data first (like AAA professional platforms)
+- **Default View**: Shows last 72 candles on initial load
+- **Smart Navigation**: Maintains professional chart navigation patterns
 
 ## 🔧 Technical Implementation
 

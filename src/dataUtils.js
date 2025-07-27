@@ -1,8 +1,22 @@
-import { json } from "d3-fetch";
-
 // JSON dosyasından OHLC verilerini oku ve dönüştür.
 export async function fetchOHLCData(url) {
-  const rawData = await json(url);
+  const response = await fetch(url);
+  
+  // Response'u kontrol et
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  // Content-Type kontrolü
+  const contentType = response.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    const text = await response.text();
+    console.error('Expected JSON, got:', contentType);
+    console.error('Response text:', text.substring(0, 200));
+    throw new Error(`Expected JSON, got: ${contentType}`);
+  }
+  
+  const rawData = await response.json();
   // Dosya paralel objeler �eklinde: Time, Open, High, Low, Close
   if (rawData.Time && rawData.Open && rawData.High && rawData.Low && rawData.Close) {
 	const keys = Object.keys(rawData.Time);
@@ -28,6 +42,9 @@ export async function fetchOHLCData(url) {
 
 // YKBNK_Min1.json dosyasından OHLC verisi almak için
 export function getData() {
-	// Public klasörden dosya yolu
-	return fetchOHLCData("/data/YKBNK_Min1.json");
+	// Public klasörden dosya yolu - process.env.PUBLIC_URL kullan
+	const baseUrl = process.env.NODE_ENV === 'development' 
+		? 'http://localhost:3000' 
+		: process.env.PUBLIC_URL || '';
+	return fetchOHLCData(`${baseUrl}/cagdaskayalar/pixistockchart/data/YKBNK_Min1.json`);
 }

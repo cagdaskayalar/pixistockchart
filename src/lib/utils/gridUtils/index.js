@@ -21,18 +21,23 @@ export const createPriceGrid = ({
 	priceMin,
 	priceMax,
 	priceDiff,
-	gridLines = 8
+	gridLines = 8,
+	totalWidth = 0 // Yeni parametre: tam ekran genişliği
 }) => {
 	// Price grid graphics
 	const grid = new PIXI.Graphics();
 	
+	// Chart yüksekliğinin %3'ü kadar padding (üst ve alt için)
+	const verticalPadding = chartHeight * 0.0125;
+	const effectiveHeight = chartHeight - (2 * verticalPadding);
+	
 	for (let i = 0; i <= gridLines; i++) {
-		const y = margin.top + (chartHeight / gridLines) * i;
+		const y = margin.top + verticalPadding + (effectiveHeight / gridLines) * i;
 		const price = priceMax - (priceDiff / gridLines) * i;
 		
-		// Grid line (v8 modern API)
-		grid.moveTo(margin.left, y)
-			.lineTo(margin.left + chartWidth, y)
+		// Grid line - sadece chart alanı içinde (v8 modern API)
+		grid.moveTo(margin.left, y)  // Chart alanının sol sınırından başla
+			.lineTo(margin.left + chartWidth, y)  // Chart alanının sağ sınırında bitir
 			.stroke({ width: 1, color: 0x333333, alpha: 0.3 });
 		
 		// Price label (right side)
@@ -49,19 +54,8 @@ export const createPriceGrid = ({
 		priceTextRight.y = y;
 		container.addChild(priceTextRight);
 		
-		// Price label (left side)
-		const priceTextLeft = new PIXI.Text({
-			text: price.toFixed(2),
-			style: {
-				fontFamily: 'Arial',
-				fontSize: 12,
-				fill: 0x888888
-			}
-		});
-		priceTextLeft.anchor.set(1, 0.5);
-		priceTextLeft.x = margin.left - 5;
-		priceTextLeft.y = y;
-		container.addChild(priceTextLeft);
+		// Price label (left side) - REMOVED for full-screen layout
+		// Sol taraftaki Y-Axis tamamen kaldırıldı
 	}
 	
 	container.addChild(grid);
@@ -84,7 +78,8 @@ export const createTimeGrid = ({
 	chartHeight,
 	visibleData,
 	timeGridIndices,
-	canvasWidth
+	canvasWidth,
+	totalHeight = 0 // Yeni parametre: tam ekran yüksekliği
 }) => {
 	// Time grid graphics
 	const grid = new PIXI.Graphics();
@@ -94,16 +89,44 @@ export const createTimeGrid = ({
 		// Calculate X position using indexToX utility (same as candlesticks)
 		const x = indexToX(dataIndex, canvasWidth, margin.left);
 		
-		// Vertical grid line (v8 modern API)
-		grid.moveTo(x, margin.top)
-			.lineTo(x, margin.top + chartHeight)
+		// Vertical grid line - sadece chart alanı içinde (v8 modern API)
+		grid.moveTo(x, margin.top)  // Chart alanının üst sınırından başla
+			.lineTo(x, margin.top + chartHeight)  // Chart alanının alt sınırında bitir
 			.stroke({ width: 1, color: 0x333333, alpha: 0.3 });
 		
 		// Date label (below chart)
 		if (visibleData[dataIndex]) {
-			const dateStr = visibleData[dataIndex].date.split('-').slice(1).join('/'); // MM/DD format
-			
-			const dateText = new PIXI.Text({
+			// Handle Date object (from real JSON data) or string (from mock data)
+		// X-Axis için Türkiye formatında tarih (16 Tem, 15 Haz formatı)
+		let dateStr = 'N/A';
+		try {
+			const dateValue = visibleData[dataIndex].date;
+			if (dateValue instanceof Date) {
+				// Real data: Date object from JSON - Türkiye formatında kısa ay
+				const day = dateValue.getDate();
+				const monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 
+				                   'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+				const month = monthNames[dateValue.getMonth()];
+				dateStr = `${day} ${month}`;
+			} else if (typeof dateValue === 'string') {
+				// Mock data: string format
+				if (dateValue.includes('T')) {
+					// ISO format: "2025-02-10T10:09:00"
+					const date = new Date(dateValue);
+					const day = date.getDate();
+					const monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 
+					                   'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+					const month = monthNames[date.getMonth()];
+					dateStr = `${day} ${month}`;
+				} else {
+					// Old format: "2024-01-01" - eski formatı koru
+					dateStr = dateValue.split('-').slice(1).join('/');
+				}
+			}
+		} catch (error) {
+			console.warn('Date formatting error:', error);
+			dateStr = 'N/A';
+		}			const dateText = new PIXI.Text({
 				text: dateStr,
 				style: {
 					fontFamily: 'Arial',
@@ -111,8 +134,11 @@ export const createTimeGrid = ({
 					fill: 0x888888
 				}
 			});
+			
+			// Merkez hizalama tüm date label'lar için
 			dateText.anchor.set(0.5, 0);
 			dateText.x = x;
+			
 			dateText.y = margin.top + chartHeight + 8;
 			container.addChild(dateText);
 		}
@@ -127,8 +153,14 @@ export const createTimeGrid = ({
  * @param {Object} params - All grid parameters
  */
 export const createCompleteGrid = (params) => {
-	const priceGrid = createPriceGrid(params);
-	const timeGrid = createTimeGrid(params);
+	const priceGrid = createPriceGrid({
+		...params,
+		totalWidth: params.totalWidth
+	});
+	const timeGrid = createTimeGrid({
+		...params,
+		totalHeight: params.totalHeight
+	});
 	
 	return {
 		priceGrid,
