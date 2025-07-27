@@ -37,7 +37,12 @@ const StockChart = ({ onPerformanceUpdate }) => {
 	const canvasRef = useRef(null);
 	const appRef = useRef(null);
 	const chartContainerRef = useRef(null);
-	const stockData = useRef(generateStockData(2000)).current;
+	
+	// Memoize stock data to prevent regeneration
+	const stockData = useRef(null);
+	if (!stockData.current) {
+		stockData.current = generateStockData(2000);
+	}
 	
 	// Dynamic dimensions
 	const [dimensions, setDimensions] = React.useState({
@@ -63,7 +68,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		memoryUsage: 0
 	});
 	
-	// Chart drawing function (optimized)
+	// Chart drawing function (optimized with memory management)
 	const drawChart = useCallback(() => {
 		const startTime = performance.now();
 		
@@ -72,16 +77,22 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		
 		const { width, height } = dimensions;
 		
-		// Clear previous graphics
-		chartContainer.removeChildren();
+		// Proper cleanup - destroy all children to prevent memory leaks
+		while (chartContainer.children.length > 0) {
+			const child = chartContainer.children[0];
+			chartContainer.removeChild(child);
+			if (child.destroy) {
+				child.destroy({ children: true, texture: false });
+			}
+		}
 		
 		const margin = { top: 40, right: 150, bottom: 60, left: 100 }; // Daha geni� Y-axis alanlar�
 		const chartWidth = width - margin.left - margin.right;
 		const chartHeight = height - margin.top - margin.bottom;
 		
 		const { startIndex, maxCandles, canvasWidth } = viewState.current;
-		const endIndex = Math.min(startIndex + maxCandles, stockData.length);
-		const visibleData = stockData.slice(startIndex, endIndex);
+		const endIndex = Math.min(startIndex + maxCandles, stockData.current.length);
+		const visibleData = stockData.current.slice(startIndex, endIndex);
 		
 		if (visibleData.length === 0) return;
 		
@@ -241,36 +252,41 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		info.y = height - 25;
 		chartContainer.addChild(info);
 		
-		// Performance tracking
+		// Performance tracking (throttled to prevent excessive updates)
 		const endTime = performance.now();
 		performanceState.current.renderTime = endTime - startTime;
 		performanceState.current.frameCount++;
 		
-		// FPS calculation
+		// FPS calculation and performance updates (throttled to every 500ms)
 		const now = Date.now();
-		if (now - performanceState.current.lastFpsUpdate >= 1000) {
-			performanceState.current.fps = performanceState.current.frameCount;
+		if (now - performanceState.current.lastFpsUpdate >= 500) {
+			performanceState.current.fps = Math.round((performanceState.current.frameCount * 1000) / (now - performanceState.current.lastFpsUpdate));
 			performanceState.current.frameCount = 0;
 			performanceState.current.lastFpsUpdate = now;
-		}
-		
-		// Memory usage (if available)
-		if (performance.memory) {
-			performanceState.current.memoryUsage = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
-		}
-		
-		// Send performance data to parent
-		if (onPerformanceUpdate) {
-			onPerformanceUpdate({
-				renderTime: Math.round(performanceState.current.renderTime * 100) / 100,
-				fps: performanceState.current.fps,
-				memoryUsage: performanceState.current.memoryUsage,
-				visibleCandles: visibleData.length,
-				totalCandles: stockData.length,
-				candleWidth: Math.round(canvasWidth * 10) / 10,
-				startIndex: startIndex,
-				priceRange: `$${priceMin.toFixed(2)}-$${priceMax.toFixed(2)}`
-			});
+			
+			// Memory usage (if available) - only update every 500ms
+			if (performance.memory) {
+				performanceState.current.memoryUsage = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+			}
+			
+			// Send performance data to parent (throttled)
+			if (onPerformanceUpdate) {
+				onPerformanceUpdate({
+					renderTime: Math.round(performanceState.current.renderTime * 100) / 100,
+					fps: performanceState.current.fps,
+					memoryUsage: performanceState.current.memoryUsage,
+					visibleCandles: visibleData.length,
+					totalCandles: stockData.current.length,
+					candleWidth: Math.round(canvasWidth * 10) / 10,
+					startIndex: startIndex,
+					priceRange: `$${priceMin.toFixed(2)}-$${priceMax.toFixed(2)}`
+				});
+			}
+			
+			// Periodic garbage collection suggestion (only in development)
+			if (process.env.NODE_ENV === 'development' && window.gc) {
+				window.gc();
+			}
 		}
 		
 		//console.log(`Chart drawn: ${visibleData.length} candles, width=${canvasWidth.toFixed(1)}px`);
@@ -347,7 +363,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				if (Math.abs(candlesMoved) > 0) {
 					// Update start index (professional stock chart behavior)
 					let newStartIndex = viewState.current.startIndex - candlesMoved;
-					newStartIndex = Math.max(0, Math.min(stockData.length - viewState.current.maxCandles, newStartIndex));
+					newStartIndex = Math.max(0, Math.min(stockData.current.length - viewState.current.maxCandles, newStartIndex));
 					
 					if (newStartIndex !== viewState.current.startIndex) {
 						viewState.current.startIndex = newStartIndex;
@@ -381,7 +397,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 					// Adjust start index to keep similar view
 					const centerIndex = viewState.current.startIndex + viewState.current.maxCandles / 2;
 					viewState.current.startIndex = Math.max(0, Math.floor(centerIndex - viewState.current.maxCandles / 2));
-					viewState.current.startIndex = Math.min(stockData.length - viewState.current.maxCandles, viewState.current.startIndex);
+					viewState.current.startIndex = Math.min(stockData.current.length - viewState.current.maxCandles, viewState.current.startIndex);
 					
 					drawChart();
 					//console.log('Zoom - candle width:', newCandleWidth.toFixed(1), 'visible candles:', viewState.current.maxCandles);
@@ -421,14 +437,14 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				appRef.current.destroy(true);
 			}
 		};
-	}, [dimensions, drawChart, stockData.length]);
+	}, [dimensions, drawChart]);
 	
 	return (
 		<div className="stock-chart-container">
 			<div ref={canvasRef} className="canvas-container" />
 			<div className="info-bar">
 				<span>Professional Stock Chart</span>
-				<span>Drag to pan | Scroll to zoom | {stockData.length} data points</span>
+				<span>Drag to pan | Scroll to zoom | {stockData.current.length} data points</span>
 			</div>
 		</div>
 	);
