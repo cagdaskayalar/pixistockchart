@@ -25,13 +25,13 @@ function App() {
 			<div className="app-header">
 				<span>Professional Trading Chart</span>
 				<div className="performance-metrics">
-					<span>Render: {performanceData.renderTime}ms</span>
-					<span>FPS: {performanceData.fps}</span>
-					<span>Memory: {performanceData.memoryUsage}MB</span>
-					<span>Candles: {performanceData.visibleCandles}/{performanceData.totalCandles}</span>
-					<span>Width: {performanceData.candleWidth}px</span>
-					<span>Index: {performanceData.startIndex}</span>
-					<span>Range: {performanceData.priceRange}</span>
+					<span className="render-time">🚀 Render: {performanceData.renderTime}ms</span>
+					<span className="fps">📊 FPS: {performanceData.fps}</span>
+					<span className="memory">💾 Memory: {performanceData.memoryUsage}MB</span>
+					<span className="candles">🕯️ Candles: {performanceData.visibleCandles}/{performanceData.totalCandles}</span>
+					<span className="width">📏 Width: {performanceData.candleWidth}px</span>
+					<span className="index">📍 Index: {performanceData.startIndex}</span>
+					<span className="price-range">💰 Range: {performanceData.priceRange}</span>
 				</div>
 			</div>
 			
