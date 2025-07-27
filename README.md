@@ -1,20 +1,34 @@
 # PIXI Stock Chart
 
-A professional stock chart visualization built with React and PIXI.js, featuring interactive candlestick charts with pan/zoom capabilities and real-time performance monitoring.
+A professional stock chart visualization with hybrid PIXI.js + SVG crosshair system, featuring interactive candlestick charts, smart candle snapping, real-time price tracking, and high-performance WebGL rendering.
 
 ## 🚀 Features
 
+### Core Chart Features
 - **Interactive Candlestick Charts**: Professional-grade stock price visualization
+- **Hybrid Crosshair System**: SVG overlay with PIXI.js rendering for optimal performance
+- **Smart Candle Snapping**: Crosshair automatically snaps to candle centers
+- **Real-time Price Tracking**: Live price and date display with golden crosshair
 - **Pan & Zoom**: Smooth navigation with mouse and wheel interactions
-- **Real-time Performance Monitoring**: Track FPS, render times, and memory usage
+
+### Performance & Visual
 - **WebGL Rendering**: High-performance graphics powered by PIXI.js v8
+- **Performance Monitoring**: Track FPS, render times, and memory usage
+- **Professional UI**: Golden dashed crosshair lines with price/date labels
 - **Responsive Design**: Adapts to different screen sizes
-- **Modern React**: Built with React 19 and hooks
+- **Smooth Interactions**: Lag-free mouse tracking and chart updates
+
+### Technical Architecture
+- **Hybrid Rendering**: PIXI.js for chart + SVG for crosshair overlay
+- **Modern React**: Built with React 19 and latest hooks (useImperativeHandle)
+- **Component Communication**: Efficient ref-based parent-child interaction
+- **Memory Optimized**: No memory leaks, clean event handling
 
 ## 🛠️ Technologies
 
 - **React 19.1.0** - Modern UI framework with latest hooks
 - **PIXI.js 8.11.0** - High-performance 2D WebGL renderer
+- **SVG** - Crosshair overlay system
 - **Create React App** - Development environment and build tools
 
 ## 📦 Installation
@@ -41,6 +55,8 @@ npm start
 
 - **Pan**: Click and drag to move around the chart
 - **Zoom**: Use mouse wheel to zoom in/out
+- **Crosshair**: Hover over chart to see real-time price and date tracking
+- **Smart Snapping**: Crosshair automatically centers on candlesticks
 - **Performance Metrics**: View real-time performance data in the header
 
 ## 📁 Project Structure
@@ -48,28 +64,51 @@ npm start
 ```
 src/
 ├── lib/
-│   └── StockChart.js     # Main chart component with PIXI.js integration
-├── index.js              # Application entry point
-├── styles.css            # Global styles
-└── dataUtils.js          # Stock data generation utilities
+│   ├── components/
+│   │   └── SvgCrosshair.js   # SVG crosshair overlay component
+│   ├── utils/
+│   │   └── coordinateUtils.js # Chart coordinate utilities
+│   └── StockChart.js         # Main PIXI.js chart component
+├── index.js                  # Application entry point
+├── styles.css               # Global styles
+└── dataUtils.js             # Stock data generation utilities
 ```
 
-## 🔧 Development
+## 🔧 Technical Implementation
 
-The project uses modern JavaScript features and follows React best practices:
+### Hybrid Architecture
+- **PIXI.js Layer**: Handles chart rendering, pan/zoom, mouse events
+- **SVG Overlay**: Renders crosshair with `pointerEvents='none'`
+- **Communication**: useImperativeHandle for efficient component interaction
 
-- **Hooks**: useState, useEffect, useCallback, useRef
-- **Performance Optimization**: Memoized callbacks and efficient rendering
-- **Event Handling**: Proper cleanup and passive event listeners
-- **Modern PIXI.js API**: Latest graphics rendering methods
+### Key Components
+- **StockChart.js**: Main PIXI.js component with mouse event handling
+- **SvgCrosshair.js**: Crosshair overlay with smart candle snapping
+- **coordinateUtils.js**: Chart coordinate calculations
 
-## 📊 Performance Features
-
+### Performance Features
 - Real-time FPS monitoring
-- Render time tracking
+- Render time tracking  
 - Memory usage display
 - Visible candle count
-- Chart metrics (width, index, price range)
+- Chart metrics (dimensions, price range)
+
+## 🎨 Crosshair Features
+
+- **Golden Theme**: Professional `#FFD700` color scheme
+- **Smart Positioning**: X-axis snaps to candle centers, Y-axis follows mouse
+- **Live Labels**: Price display ($133.40) and date (03/05)
+- **Professional Styling**: Dashed lines, rounded labels, center dot
+- **Chart Bounds**: Crosshair only appears within chart area
+
+## 🚀 Recent Updates (v1.1.0)
+
+- ✅ Implemented hybrid PIXI.js + SVG crosshair system
+- ✅ Added smart candle snapping functionality  
+- ✅ Fixed date field mapping and formatting
+- ✅ Optimized component communication with useImperativeHandle
+- ✅ Enhanced performance with non-blocking SVG overlay
+- ✅ Added professional golden crosshair styling
 
 ## 🤝 Contributing
 
@@ -93,28 +132,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [PIXI.js](https://pixijs.com/) - Amazing 2D WebGL renderer
 - [React](https://reactjs.org/) - The best UI library
+- [SVG](https://developer.mozilla.org/en-US/docs/Web/SVG) - Scalable vector graphics for crosshair
 - [Create React App](https://create-react-app.dev/) - Great development environment
 
 ---
 
-Built with ❤️ using React and PIXI.js
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Built with ❤️ using React, PIXI.js, and SVG

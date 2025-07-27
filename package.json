@@ -1,7 +1,7 @@
 {
   "name": "pixistockchart",
-  "version": "1.0.0",
-  "description": "Professional stock chart visualization built with React and PIXI.js. Features interactive candlestick charts with pan/zoom capabilities, real-time performance monitoring, and smooth WebGL rendering.",
+  "version": "1.1.0",
+  "description": "Professional stock chart visualization with hybrid PIXI.js + SVG crosshair system. Features interactive candlestick charts, smart candle snapping, real-time price tracking, pan/zoom capabilities, and smooth WebGL rendering.",
   "author": {
     "name": "Mehmet Çağdaş Kayalarlıoğulları",
     "email": "cagdaskaya@hotmail.com"
@@ -20,7 +20,11 @@
     "webgl",
     "trading",
     "financial-charts",
-    "visualization"
+    "visualization",
+    "crosshair",
+    "svg-overlay",
+    "hybrid-rendering",
+    "candle-snapping"
   ],
   "private": false,
   "dependencies": {
