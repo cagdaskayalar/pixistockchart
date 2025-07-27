@@ -8,25 +8,15 @@ import {
 	indexToX, 
 	calculateTimeGridIndices, 
 	calculateCandleBodyWidth,
-	constrainCandleWidth,
-	xToIndex,
-	isPointInChartBounds 
+	constrainCandleWidth
 } from './utils/coordinateUtils';
+import SvgCrosshair from './components/SvgCrosshair';
 
 const StockChart = ({ onPerformanceUpdate }) => {
 	const canvasRef = useRef(null);
 	const appRef = useRef(null);
 	const chartContainerRef = useRef(null);
-	const crosshairContainerRef = useRef(null); // Ayrı crosshair layer
-	
-	// Crosshair state (throttled updates için)
-	const [crosshair, setCrosshair] = React.useState({
-		visible: false,
-		x: 0,
-		y: 0,
-		dataIndex: -1,
-		candle: null
-	});
+	const svgCrosshairRef = useRef(null); // SVG crosshair reference
 	
 	// Memoize stock data to prevent regeneration
 	const stockData = useRef(null);
@@ -264,43 +254,13 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		
 		//console.log(`Chart drawn: ${visibleData.length} candles, width=${canvasWidth.toFixed(1)}px`);
 	}, [dimensions, stockData, onPerformanceUpdate]);
-	
-	// Separate crosshair drawing function for better performance
-	const drawCrosshair = useCallback(() => {
-		const crosshairContainer = crosshairContainerRef.current;
-		if (!crosshairContainer) return;
-		
-		// Clear previous crosshair
-		destroyContainerChildren(crosshairContainer);
-		
-		// Only draw if visible and valid
-		if (crosshair.visible && crosshair.dataIndex >= 0) {
-			const { margin, chartWidth, chartHeight } = calculateChartDimensions(dimensions.width, dimensions.height);
-			
-			const crosshairGfx = new PIXI.Graphics();
-			
-			// Vertical line (time) - snap to nearest candlestick
-			const { canvasWidth } = viewState.current;
-			const snapX = indexToX(crosshair.dataIndex, canvasWidth, margin.left);
-			
-			crosshairGfx.moveTo(snapX, margin.top)
-						.lineTo(snapX, margin.top + chartHeight)
-						.stroke({ width: 1, color: 0xffff00, alpha: 0.8 });
-			
-			// Horizontal line (price)  
-			crosshairGfx.moveTo(margin.left, crosshair.y)
-						.lineTo(margin.left + chartWidth, crosshair.y)
-						.stroke({ width: 1, color: 0xffff00, alpha: 0.8 });
-			
-			crosshairContainer.addChild(crosshairGfx);
-		}
-	}, [crosshair, dimensions]);
-	
-	// Update crosshair when state changes
-	React.useEffect(() => {
-		drawCrosshair();
-	}, [drawCrosshair]);
-	
+
+	// Callback for SVG crosshair when hovering over candles
+	const handleCandleHover = useCallback((candle, dataIndex) => {
+		// Optional: Add any additional hover logic here
+		// console.log('Hovering over candle:', candle, 'at index:', dataIndex);
+	}, []);
+
 	// Handle window resize
 	React.useEffect(() => {
 		const handleResize = () => {
@@ -349,11 +309,6 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			app.stage.addChild(chartContainer);
 			chartContainerRef.current = chartContainer;
 			
-			// Crosshair container (separate layer for better performance)
-			const crosshairContainer = new PIXI.Container();
-			app.stage.addChild(crosshairContainer);
-			crosshairContainerRef.current = crosshairContainer;
-			
 			// Initial state
 			viewState.current.maxCandles = Math.floor((width - 250) / viewState.current.canvasWidth); // 250 = toplam margin
 			
@@ -375,71 +330,32 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				canvas.style.cursor = 'grabbing';
 			};
 			
-			// Mouse move (pan + crosshair tracking) - optimized with throttling
+			// Mouse move (pan + crosshair tracking)
 			const handleMouseMove = (e) => {
 				const rect = canvasRef.current.getBoundingClientRect();
 				const mouseX = e.clientX - rect.left;
 				const mouseY = e.clientY - rect.top;
 				
-				// Get chart dimensions from viewState
-				const { margin, chartWidth, chartHeight } = viewState.current.chartDimensions || {};
-				if (!margin) return; // Safety check
-				
-				// Chart bounds for boundary checking
-				const bounds = {
-					left: margin.left,
-					top: margin.top,
-					right: margin.left + chartWidth,
-					bottom: margin.top + chartHeight
-				};
-				
-				// Crosshair tracking (only when not dragging for better performance)
-				if (!viewState.current.isDragging && isPointInChartBounds(mouseX, mouseY, bounds)) {
-					// Calculate which candlestick we're hovering over (snap to nearest)
-					const rawIndex = xToIndex(mouseX, viewState.current.canvasWidth, margin.left);
-					const dataIndex = Math.max(0, Math.min(rawIndex, viewState.current.maxCandles - 1));
-					
-					const { startIndex } = viewState.current;
-					const endIndex = Math.min(startIndex + viewState.current.maxCandles, stockData.current.length);
-					const visibleData = stockData.current.slice(startIndex, endIndex);
-					
-					if (dataIndex >= 0 && dataIndex < visibleData.length) {
-						const hoveredCandle = visibleData[dataIndex];
-						
-						// Throttle crosshair updates to prevent excessive re-renders
-						const now = Date.now();
-						if (!viewState.current.lastCrosshairUpdate || now - viewState.current.lastCrosshairUpdate > 16) { // ~60fps
-							setCrosshair({
-								visible: true,
-								x: mouseX, // Keep original X for smooth movement
-								y: mouseY,
-								dataIndex: dataIndex,
-								candle: hoveredCandle
-							});
-							viewState.current.lastCrosshairUpdate = now;
-						}
-					} else {
-						setCrosshair(prev => ({ ...prev, visible: false }));
-					}
-				} else if (!isPointInChartBounds(mouseX, mouseY, bounds)) {
-					setCrosshair(prev => ({ ...prev, visible: false }));
+				// Update SVG crosshair via ref (if available)
+				if (svgCrosshairRef.current) {
+					svgCrosshairRef.current.updateCrosshair(mouseX, mouseY, !viewState.current.isDragging);
 				}
 				
-				// Existing pan logic
-				if (!viewState.current.isDragging) return;
-				
-				const deltaX = e.clientX - viewState.current.lastMouseX;
-				const candlesMoved = Math.round(deltaX / viewState.current.canvasWidth);
-				
-				if (Math.abs(candlesMoved) > 0) {
-					// Update start index (professional stock chart behavior)
-					let newStartIndex = viewState.current.startIndex - candlesMoved;
-					newStartIndex = Math.max(0, Math.min(stockData.current.length - viewState.current.maxCandles, newStartIndex));
+				// Pan logic (only when dragging)
+				if (viewState.current.isDragging) {
+					const deltaX = e.clientX - viewState.current.lastMouseX;
+					const candlesMoved = Math.round(deltaX / viewState.current.canvasWidth);
 					
-					if (newStartIndex !== viewState.current.startIndex) {
-						viewState.current.startIndex = newStartIndex;
-						viewState.current.lastMouseX = e.clientX;
-						drawChart();
+					if (Math.abs(candlesMoved) > 0) {
+						// Update start index (professional stock chart behavior)
+						let newStartIndex = viewState.current.startIndex - candlesMoved;
+						newStartIndex = Math.max(0, Math.min(stockData.current.length - viewState.current.maxCandles, newStartIndex));
+						
+						if (newStartIndex !== viewState.current.startIndex) {
+							viewState.current.startIndex = newStartIndex;
+							viewState.current.lastMouseX = e.clientX;
+							drawChart();
+						}
 					}
 				}
 			};
@@ -448,6 +364,13 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			const handleMouseUp = () => {
 				viewState.current.isDragging = false;
 				canvas.style.cursor = 'crosshair';
+			};
+
+			// Mouse leave - hide crosshair
+			const handleMouseLeave = () => {
+				if (svgCrosshairRef.current) {
+					svgCrosshairRef.current.updateCrosshair(0, 0, false);
+				}
 			};
 			
 			// Wheel (zoom)
@@ -476,6 +399,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			canvas.addEventListener('mousedown', handleMouseDown);
 			canvas.addEventListener('mousemove', handleMouseMove);
 			canvas.addEventListener('mouseup', handleMouseUp);
+			canvas.addEventListener('mouseleave', handleMouseLeave);
 			canvas.addEventListener('wheel', handleWheel, { passive: false });
 			document.addEventListener('mouseup', handleMouseUp); // Global mouse up
 			
@@ -484,6 +408,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				handleMouseDown,
 				handleMouseMove,
 				handleMouseUp,
+				handleMouseLeave,
 				handleWheel,
 				canvas
 			};
@@ -494,10 +419,11 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		// Cleanup
 		return () => {
 			if (appRef.current?._eventHandlers) {
-				const { handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, canvas } = appRef.current._eventHandlers;
+				const { handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave, handleWheel, canvas } = appRef.current._eventHandlers;
 				canvas.removeEventListener('mousedown', handleMouseDown);
 				canvas.removeEventListener('mousemove', handleMouseMove);
 				canvas.removeEventListener('mouseup', handleMouseUp);
+				canvas.removeEventListener('mouseleave', handleMouseLeave);
 				canvas.removeEventListener('wheel', handleWheel);
 				document.removeEventListener('mouseup', handleMouseUp);
 			}
@@ -506,11 +432,24 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				appRef.current.destroy(true);
 			}
 		};
-	}, [dimensions, drawChart]);
+	}, [dimensions, drawChart, handleCandleHover]);
 	
 	return (
-		<div className="stock-chart-container">
+		<div className="stock-chart-container" style={{ position: 'relative' }}>
 			<div ref={canvasRef} className="canvas-container" />
+			<SvgCrosshair
+				ref={svgCrosshairRef}
+				stockData={stockData.current}
+				viewState={viewState}
+				chartBounds={viewState.current.chartDimensions ? {
+					left: viewState.current.chartDimensions.margin.left,
+					top: viewState.current.chartDimensions.margin.top,
+					right: viewState.current.chartDimensions.margin.left + viewState.current.chartDimensions.chartWidth,
+					bottom: viewState.current.chartDimensions.margin.top + viewState.current.chartDimensions.chartHeight
+				} : null}
+				margin={viewState.current.chartDimensions?.margin}
+				onCandleHover={handleCandleHover}
+			/>
 			<div className="info-bar">
 				<span>Professional Stock Chart</span>
 				<span>Drag to pan | Scroll to zoom | {stockData.current.length} data points</span>
