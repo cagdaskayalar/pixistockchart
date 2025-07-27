@@ -336,9 +336,9 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				const mouseX = e.clientX - rect.left;
 				const mouseY = e.clientY - rect.top;
 				
-				// Update SVG crosshair via ref (if available)
+				// Update SVG crosshair via ref (if available) - always enabled
 				if (svgCrosshairRef.current) {
-					svgCrosshairRef.current.updateCrosshair(mouseX, mouseY, !viewState.current.isDragging);
+					svgCrosshairRef.current.updateCrosshair(mouseX, mouseY, true);
 				}
 				
 				// Pan logic (only when dragging)
