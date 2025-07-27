@@ -73,6 +73,15 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		// Price range calculation using utility
 		const { priceMin, priceMax, priceDiff } = calculatePriceRange(visibleData);
 		
+		// Store price calculation values for crosshair
+		viewState.current.priceCalculations = {
+			priceMin,
+			priceMax,
+			priceDiff,
+			chartTop: margin.top,
+			chartHeight
+		};
+		
 		// Background (PIXI v8 modern API)
 		const bg = new PIXI.Graphics()
 			.rect(margin.left, margin.top, chartWidth, chartHeight)
@@ -105,7 +114,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				}
 			});
 			priceText.anchor.set(0, 0.5);
-			priceText.x = margin.left + chartWidth + 20; // Daha uzak
+			priceText.x = margin.left + chartWidth + 5; // Chart'a daha yakın
 			priceText.y = y;
 			chartContainer.addChild(priceText);
 			
@@ -119,7 +128,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				}
 			});
 			priceTextLeft.anchor.set(1, 0.5);
-			priceTextLeft.x = margin.left - 15; // Daha uzak
+			priceTextLeft.x = margin.left - 5; // Chart'a daha yakın
 			priceTextLeft.y = y;
 			chartContainer.addChild(priceTextLeft);
 		}
@@ -188,32 +197,8 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			chartContainer.addChild(candleGfx);
 		});
 		
-		// Title and info (PIXI v8 modern API)
-		const title = new PIXI.Text({
-			text: 'Professional Stock Chart',
-			style: {
-				fontFamily: 'Arial',
-				fontSize: 16,
-				fill: 0xffffff,
-				fontWeight: 'bold'
-			}
-		});
-		title.x = margin.left;
-		title.y = 10;
-		chartContainer.addChild(title);
 		
-		// Status info
-		const info = new PIXI.Text({
-			text: `Range: ${startIndex}-${endIndex} (${visibleData.length} candles) | Candle Width: ${canvasWidth.toFixed(1)}px | Price: $${priceMin.toFixed(2)}-$${priceMax.toFixed(2)}`,
-			style: {
-				fontFamily: 'Arial',
-				fontSize: 11,
-				fill: 0xaaaaaa
-			}
-		});
-		info.x = margin.left;
-		info.y = height - 25;
-		chartContainer.addChild(info);
+	
 		
 		// Performance tracking (throttled to prevent excessive updates)
 		const endTime = performance.now();
@@ -272,6 +257,9 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			const { margin, chartWidth, chartHeight } = calculateChartDimensions(newWidth, newHeight);
 			viewState.current.chartDimensions = { margin, chartWidth, chartHeight };
 			
+			// Update maxCandles based on new chart width
+			viewState.current.maxCandles = Math.floor(chartWidth / viewState.current.canvasWidth);
+			
 			if (appRef.current) {
 				// PIXI v8'de renderer.resize yerine app.renderer.resize
 				appRef.current.renderer.resize(newWidth, newHeight);
@@ -309,12 +297,12 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			app.stage.addChild(chartContainer);
 			chartContainerRef.current = chartContainer;
 			
-			// Initial state
-			viewState.current.maxCandles = Math.floor((width - 250) / viewState.current.canvasWidth); // 250 = toplam margin
-			
 			// Store chart dimensions for event handlers
 			const { margin, chartWidth, chartHeight } = calculateChartDimensions(width, height);
 			viewState.current.chartDimensions = { margin, chartWidth, chartHeight };
+			
+			// Initial state - use actual chart width instead of hardcoded margin
+			viewState.current.maxCandles = Math.floor(chartWidth / viewState.current.canvasWidth);
 			
 			// Draw initial chart
 			drawChart();
@@ -384,7 +372,9 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				
 				if (newCandleWidth !== viewState.current.canvasWidth) {
 					viewState.current.canvasWidth = newCandleWidth;
-					viewState.current.maxCandles = Math.floor((dimensions.width - 250) / newCandleWidth); // 250 = toplam margin
+					// Use actual chart width from stored dimensions
+					const chartWidth = viewState.current.chartDimensions.chartWidth;
+					viewState.current.maxCandles = Math.floor(chartWidth / newCandleWidth);
 					
 					// Adjust start index to keep similar view
 					const centerIndex = viewState.current.startIndex + viewState.current.maxCandles / 2;
@@ -448,12 +438,7 @@ const StockChart = ({ onPerformanceUpdate }) => {
 					bottom: viewState.current.chartDimensions.margin.top + viewState.current.chartDimensions.chartHeight
 				} : null}
 				margin={viewState.current.chartDimensions?.margin}
-				onCandleHover={handleCandleHover}
-			/>
-			<div className="info-bar">
-				<span>Professional Stock Chart</span>
-				<span>Drag to pan | Scroll to zoom | {stockData.current.length} data points</span>
-			</div>
+				onCandleHover={handleCandleHover}/>
 		</div>
 	);
 };

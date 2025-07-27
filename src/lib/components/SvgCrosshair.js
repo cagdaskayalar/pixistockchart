@@ -1,5 +1,6 @@
 import React, { useState, useRef, useImperativeHandle, forwardRef } from 'react';
 import { isPointInChartBounds, xToIndex } from '../utils/coordinateUtils';
+import { yToPrice } from '../utils/priceCalculations';
 
 const SvgCrosshair = forwardRef(({ 
 	stockData, 
@@ -32,6 +33,17 @@ const SvgCrosshair = forwardRef(({
 				setCrosshair(prev => ({ ...prev, visible: false }));
 				return;
 			}
+
+			// Price calculation values check
+			if (!viewState.current.priceCalculations) {
+				setCrosshair(prev => ({ ...prev, visible: false }));
+				return;
+			}
+
+			const { priceMin, priceDiff, chartTop, chartHeight } = viewState.current.priceCalculations;
+
+			// Calculate actual price at mouse Y position
+			const actualPrice = yToPrice(mouseY, priceMin, priceDiff, chartTop, chartHeight);
 
 			// Hangi muma denk geldiğini hesapla
 			const rawIndex = xToIndex(mouseX, viewState.current.canvasWidth, margin.left);
@@ -76,7 +88,7 @@ const SvgCrosshair = forwardRef(({
 					visible: true,
 					x: candleX, // Snap to candle center
 					y: mouseY,  // Follow mouse Y exactly
-					price: candle.close,
+					price: actualPrice, // Use calculated price at mouse Y position
 					time: formattedTime,
 					dataIndex: startIndex + dataIndex
 				});

@@ -10,7 +10,7 @@
  * @returns {Object} Margin and dimension calculations
  */
 export const calculateChartDimensions = (width, height, customMargins = {}) => {
-	const defaultMargins = { top: 40, right: 150, bottom: 60, left: 100 };
+	const defaultMargins = { top: 40, right: 50, bottom: 60, left: 50 }; // right: 60 → 40
 	const margin = { ...defaultMargins, ...customMargins };
 	
 	return {
