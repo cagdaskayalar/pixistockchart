@@ -1,42 +1,32 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import * as PIXI from 'pixi.js';
-
-// Sample stock data generator
-const generateStockData = (days = 2000) => {
-	const data = [];
-	let price = 100;
-	const startDate = new Date('2024-01-01');
-	
-	for (let i = 0; i < days; i++) {
-		const date = new Date(startDate);
-		date.setDate(startDate.getDate() + i);
-		
-		const change = (Math.random() - 0.5) * 6; // More volatility
-		const open = price;
-		const close = price + change;
-		const high = Math.max(open, close) + Math.random() * 3;
-		const low = Math.min(open, close) - Math.random() * 3;
-		const volume = Math.floor(Math.random() * 2000000) + 500000;
-		
-		data.push({
-			date: date.toISOString().split('T')[0],
-			open: parseFloat(open.toFixed(2)),
-			high: parseFloat(high.toFixed(2)),
-			low: parseFloat(low.toFixed(2)),
-			close: parseFloat(close.toFixed(2)),
-			volume
-		});
-		
-		price = close;
-	}
-	
-	return data;
-};
+import { generateStockData } from './utils/dataUtils';
+import { calculatePriceRange, priceToY } from './utils/priceCalculations';
+import { destroyContainerChildren, getCandlestickColor } from './utils/pixiHelpers';
+import { 
+	calculateChartDimensions, 
+	indexToX, 
+	calculateTimeGridIndices, 
+	calculateCandleBodyWidth,
+	constrainCandleWidth,
+	xToIndex,
+	isPointInChartBounds 
+} from './utils/coordinateUtils';
 
 const StockChart = ({ onPerformanceUpdate }) => {
 	const canvasRef = useRef(null);
 	const appRef = useRef(null);
 	const chartContainerRef = useRef(null);
+	const crosshairContainerRef = useRef(null); // Ayrı crosshair layer
+	
+	// Crosshair state (throttled updates için)
+	const [crosshair, setCrosshair] = React.useState({
+		visible: false,
+		x: 0,
+		y: 0,
+		dataIndex: -1,
+		candle: null
+	});
 	
 	// Memoize stock data to prevent regeneration
 	const stockData = useRef(null);
@@ -56,7 +46,8 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		canvasWidth: 20, // pixels per candle
 		isDragging: false,
 		lastMouseX: 0,
-		maxCandles: 50
+		maxCandles: 50,
+		lastCrosshairUpdate: 0 // For throttling crosshair updates
 	});
 	
 	// Performance tracking
@@ -77,18 +68,11 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		
 		const { width, height } = dimensions;
 		
-		// Proper cleanup - destroy all children to prevent memory leaks
-		while (chartContainer.children.length > 0) {
-			const child = chartContainer.children[0];
-			chartContainer.removeChild(child);
-			if (child.destroy) {
-				child.destroy({ children: true, texture: false });
-			}
-		}
+		// Proper cleanup using utility - destroy all children to prevent memory leaks
+		destroyContainerChildren(chartContainer);
 		
-		const margin = { top: 40, right: 150, bottom: 60, left: 100 }; // Daha geni� Y-axis alanlar�
-		const chartWidth = width - margin.left - margin.right;
-		const chartHeight = height - margin.top - margin.bottom;
+		// Calculate chart dimensions using utility
+		const { margin, chartWidth, chartHeight } = calculateChartDimensions(width, height);
 		
 		const { startIndex, maxCandles, canvasWidth } = viewState.current;
 		const endIndex = Math.min(startIndex + maxCandles, stockData.current.length);
@@ -96,15 +80,8 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		
 		if (visibleData.length === 0) return;
 		
-		// Price range calculation
-		const prices = visibleData.flatMap(d => [d.open, d.high, d.low, d.close]);
-		const minPrice = Math.min(...prices);
-		const maxPrice = Math.max(...prices);
-		const priceRange = maxPrice - minPrice;
-		const padding = priceRange * 0.1;
-		const priceMin = minPrice - padding;
-		const priceMax = maxPrice + padding;
-		const priceDiff = priceMax - priceMin;
+		// Price range calculation using utility
+		const { priceMin, priceMax, priceDiff } = calculatePriceRange(visibleData);
 		
 		// Background (PIXI v8 modern API)
 		const bg = new PIXI.Graphics()
@@ -157,57 +134,53 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			chartContainer.addChild(priceTextLeft);
 		}
 		
-		// Vertical time grid (X-axis) - Candlestick pozisyonlar� ile tam senkronize
-		const timeGridLines = Math.min(6, visibleData.length);
+		// Vertical time grid (X-axis) - Calculate grid indices using utility
+		const timeGridIndices = calculateTimeGridIndices(visibleData, 6);
 		
-		// Grid �izgileri i�in se�ilen candlestick index'leri
-		for (let i = 0; i < timeGridLines && i < visibleData.length; i++) {
-			const dataIndex = i === timeGridLines - 1 
-				? visibleData.length - 1  // Son candlestick
-				: Math.floor((visibleData.length - 1) * (i / (timeGridLines - 1)));
+		// Grid çizgileri için seçilen candlestick index'leri
+		for (const dataIndex of timeGridIndices) {
+			// Candlestick ile TAM AYNI X pozisyon formülü - using indexToX utility
+			const x = indexToX(dataIndex, canvasWidth, margin.left);
 			
-			if (dataIndex >= 0 && dataIndex < visibleData.length) {
-				// Candlestick ile TAM AYNI X pozisyon formülü
-				const x = margin.left + (dataIndex + 0.5) * canvasWidth;
-				
-				// Vertical grid line (v8 modern API)
-				grid.moveTo(x, margin.top)
-					.lineTo(x, margin.top + chartHeight)
-					.stroke({ width: 1, color: 0x333333, alpha: 0.3 });
-				
-				// Date label (candlestick'in tam altında)
-				const dateStr = visibleData[dataIndex].date.split('-').slice(1).join('/'); // MM/DD format
-				
-				const dateText = new PIXI.Text({
-					text: dateStr,
-					style: {
-						fontFamily: 'Arial',
-						fontSize: 11,
-						fill: 0x888888
-					}
-				});
-				dateText.anchor.set(0.5, 0);
-				dateText.x = x; // Candlestick ile tam aynı X pozisyonu
-				dateText.y = margin.top + chartHeight + 8;
-				chartContainer.addChild(dateText);
-			}
+			// Vertical grid line (v8 modern API)
+			grid.moveTo(x, margin.top)
+				.lineTo(x, margin.top + chartHeight)
+				.stroke({ width: 1, color: 0x333333, alpha: 0.3 });
+			
+			// Date label (candlestick'in tam altında)
+			const dateStr = visibleData[dataIndex].date.split('-').slice(1).join('/'); // MM/DD format
+			
+			const dateText = new PIXI.Text({
+				text: dateStr,
+				style: {
+					fontFamily: 'Arial',
+					fontSize: 11,
+					fill: 0x888888
+				}
+			});
+			dateText.anchor.set(0.5, 0);
+			dateText.x = x; // Candlestick ile tam aynı X pozisyonu
+			dateText.y = margin.top + chartHeight + 8;
+			chartContainer.addChild(dateText);
 		}
 		
 		chartContainer.addChild(grid);
 		
 		// Draw candlesticks (PIXI v8 modern API)
 		visibleData.forEach((candle, i) => {
-			const x = margin.left + (i + 0.5) * canvasWidth;
-			const bodyWidth = Math.max(2, canvasWidth * 0.8);
+			// X position using indexToX utility (but here i is local index, not data index)
+			const x = indexToX(i, canvasWidth, margin.left);
 			
-			// Y positions
-			const openY = margin.top + chartHeight - ((candle.open - priceMin) / priceDiff) * chartHeight;
-			const closeY = margin.top + chartHeight - ((candle.close - priceMin) / priceDiff) * chartHeight;
-			const highY = margin.top + chartHeight - ((candle.high - priceMin) / priceDiff) * chartHeight;
-			const lowY = margin.top + chartHeight - ((candle.low - priceMin) / priceDiff) * chartHeight;
+			// Calculate candle body width using utility
+			const bodyWidth = calculateCandleBodyWidth(canvasWidth, 2, 0.8);
 			
-			const isGreen = candle.close >= candle.open;
-			const color = isGreen ? 0x00dd88 : 0xdd4444;
+			// Y positions using utility
+			const openY = priceToY(candle.open, priceMin, priceDiff, margin.top, chartHeight);
+			const closeY = priceToY(candle.close, priceMin, priceDiff, margin.top, chartHeight);
+			const highY = priceToY(candle.high, priceMin, priceDiff, margin.top, chartHeight);
+			const lowY = priceToY(candle.low, priceMin, priceDiff, margin.top, chartHeight);
+			
+			const color = getCandlestickColor(candle);
 			
 			const candleGfx = new PIXI.Graphics();
 			
@@ -292,12 +265,52 @@ const StockChart = ({ onPerformanceUpdate }) => {
 		//console.log(`Chart drawn: ${visibleData.length} candles, width=${canvasWidth.toFixed(1)}px`);
 	}, [dimensions, stockData, onPerformanceUpdate]);
 	
+	// Separate crosshair drawing function for better performance
+	const drawCrosshair = useCallback(() => {
+		const crosshairContainer = crosshairContainerRef.current;
+		if (!crosshairContainer) return;
+		
+		// Clear previous crosshair
+		destroyContainerChildren(crosshairContainer);
+		
+		// Only draw if visible and valid
+		if (crosshair.visible && crosshair.dataIndex >= 0) {
+			const { margin, chartWidth, chartHeight } = calculateChartDimensions(dimensions.width, dimensions.height);
+			
+			const crosshairGfx = new PIXI.Graphics();
+			
+			// Vertical line (time) - snap to nearest candlestick
+			const { canvasWidth } = viewState.current;
+			const snapX = indexToX(crosshair.dataIndex, canvasWidth, margin.left);
+			
+			crosshairGfx.moveTo(snapX, margin.top)
+						.lineTo(snapX, margin.top + chartHeight)
+						.stroke({ width: 1, color: 0xffff00, alpha: 0.8 });
+			
+			// Horizontal line (price)  
+			crosshairGfx.moveTo(margin.left, crosshair.y)
+						.lineTo(margin.left + chartWidth, crosshair.y)
+						.stroke({ width: 1, color: 0xffff00, alpha: 0.8 });
+			
+			crosshairContainer.addChild(crosshairGfx);
+		}
+	}, [crosshair, dimensions]);
+	
+	// Update crosshair when state changes
+	React.useEffect(() => {
+		drawCrosshair();
+	}, [drawCrosshair]);
+	
 	// Handle window resize
 	React.useEffect(() => {
 		const handleResize = () => {
 			const newWidth = window.innerWidth;
 			const newHeight = window.innerHeight - 50;
 			setDimensions({ width: newWidth, height: newHeight });
+			
+			// Update chart dimensions in viewState
+			const { margin, chartWidth, chartHeight } = calculateChartDimensions(newWidth, newHeight);
+			viewState.current.chartDimensions = { margin, chartWidth, chartHeight };
 			
 			if (appRef.current) {
 				// PIXI v8'de renderer.resize yerine app.renderer.resize
@@ -336,8 +349,17 @@ const StockChart = ({ onPerformanceUpdate }) => {
 			app.stage.addChild(chartContainer);
 			chartContainerRef.current = chartContainer;
 			
+			// Crosshair container (separate layer for better performance)
+			const crosshairContainer = new PIXI.Container();
+			app.stage.addChild(crosshairContainer);
+			crosshairContainerRef.current = crosshairContainer;
+			
 			// Initial state
 			viewState.current.maxCandles = Math.floor((width - 250) / viewState.current.canvasWidth); // 250 = toplam margin
+			
+			// Store chart dimensions for event handlers
+			const { margin, chartWidth, chartHeight } = calculateChartDimensions(width, height);
+			viewState.current.chartDimensions = { margin, chartWidth, chartHeight };
 			
 			// Draw initial chart
 			drawChart();
@@ -353,8 +375,57 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				canvas.style.cursor = 'grabbing';
 			};
 			
-			// Mouse move (pan)
+			// Mouse move (pan + crosshair tracking) - optimized with throttling
 			const handleMouseMove = (e) => {
+				const rect = canvasRef.current.getBoundingClientRect();
+				const mouseX = e.clientX - rect.left;
+				const mouseY = e.clientY - rect.top;
+				
+				// Get chart dimensions from viewState
+				const { margin, chartWidth, chartHeight } = viewState.current.chartDimensions || {};
+				if (!margin) return; // Safety check
+				
+				// Chart bounds for boundary checking
+				const bounds = {
+					left: margin.left,
+					top: margin.top,
+					right: margin.left + chartWidth,
+					bottom: margin.top + chartHeight
+				};
+				
+				// Crosshair tracking (only when not dragging for better performance)
+				if (!viewState.current.isDragging && isPointInChartBounds(mouseX, mouseY, bounds)) {
+					// Calculate which candlestick we're hovering over (snap to nearest)
+					const rawIndex = xToIndex(mouseX, viewState.current.canvasWidth, margin.left);
+					const dataIndex = Math.max(0, Math.min(rawIndex, viewState.current.maxCandles - 1));
+					
+					const { startIndex } = viewState.current;
+					const endIndex = Math.min(startIndex + viewState.current.maxCandles, stockData.current.length);
+					const visibleData = stockData.current.slice(startIndex, endIndex);
+					
+					if (dataIndex >= 0 && dataIndex < visibleData.length) {
+						const hoveredCandle = visibleData[dataIndex];
+						
+						// Throttle crosshair updates to prevent excessive re-renders
+						const now = Date.now();
+						if (!viewState.current.lastCrosshairUpdate || now - viewState.current.lastCrosshairUpdate > 16) { // ~60fps
+							setCrosshair({
+								visible: true,
+								x: mouseX, // Keep original X for smooth movement
+								y: mouseY,
+								dataIndex: dataIndex,
+								candle: hoveredCandle
+							});
+							viewState.current.lastCrosshairUpdate = now;
+						}
+					} else {
+						setCrosshair(prev => ({ ...prev, visible: false }));
+					}
+				} else if (!isPointInChartBounds(mouseX, mouseY, bounds)) {
+					setCrosshair(prev => ({ ...prev, visible: false }));
+				}
+				
+				// Existing pan logic
 				if (!viewState.current.isDragging) return;
 				
 				const deltaX = e.clientX - viewState.current.lastMouseX;
@@ -369,7 +440,6 @@ const StockChart = ({ onPerformanceUpdate }) => {
 						viewState.current.startIndex = newStartIndex;
 						viewState.current.lastMouseX = e.clientX;
 						drawChart();
-						//console.log('Pan to index:', newStartIndex);
 					}
 				}
 			};
@@ -385,10 +455,9 @@ const StockChart = ({ onPerformanceUpdate }) => {
 				e.preventDefault();
 				
 				const zoomFactor = e.deltaY < 0 ? 1.2 : 0.8;
-				let newCandleWidth = viewState.current.canvasWidth * zoomFactor;
 				
-				// Zoom limits
-				newCandleWidth = Math.max(4, Math.min(100, newCandleWidth));
+				// Calculate new candle width with constraints using utility
+				const newCandleWidth = constrainCandleWidth(viewState.current.canvasWidth, zoomFactor, 4, 100);
 				
 				if (newCandleWidth !== viewState.current.canvasWidth) {
 					viewState.current.canvasWidth = newCandleWidth;
