@@ -1,12 +1,34 @@
 {
   "name": "pixistockchart",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
+  "description": "Professional stock chart visualization built with React and PIXI.js. Features interactive candlestick charts with pan/zoom capabilities, real-time performance monitoring, and smooth WebGL rendering.",
+  "author": {
+    "name": "Mehmet Çağdaş Kayalarlıoğulları",
+    "email": "cagdaskaya@hotmail.com"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/cagdaskayalar/pixistockchart",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cagdaskayalar/pixistockchart.git"
+  },
+  "keywords": [
+    "react",
+    "pixi.js",
+    "stock-chart",
+    "candlestick",
+    "webgl",
+    "trading",
+    "financial-charts",
+    "visualization"
+  ],
+  "private": false,
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "pixi.js": "^8.11.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-scripts": "5.0.1",
