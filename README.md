@@ -28,12 +28,15 @@ A professional Turkish-localized stock chart visualization with modular PIXI.js 
 - **Memory Optimized**: Comprehensive cleanup and null-safety checks
 
 ### Technical Architecture
+- **DRY Architecture**: Centralized AxisUtils.js following Don't Repeat Yourself principles
 - **Modular System**: Utility-based grid functions for better maintainability
 - **Responsive Hook System**: Custom useResizeObserver and useResponsiveAxis hooks
 - **Dynamic Sizing**: Eliminated hardcoded axis dimensions with Canvas-based text measurement
 - **React 19 Compatible**: Built with React 19.1.0 and modern hooks
 - **PIXI v8 Optimized**: Full compatibility with latest PIXI.js architecture
 - **SVG Integration**: Advanced SVG pattern-based grid system
+- **D3 Tick System**: Professional tick generation with intelligent spacing algorithms
+- **JSDoc Documentation**: Comprehensive function documentation with @param and @returns
 - **Error Resilient**: Comprehensive error handling and null-safety
 - **Component Communication**: Efficient ref-based parent-child interaction
 
@@ -42,15 +45,19 @@ A professional Turkish-localized stock chart visualization with modular PIXI.js 
 **Core Stack:**
 - **React 19.1.0** - Modern UI framework with latest hooks (useImperativeHandle, forwardRef)
 - **PIXI.js 8.11.0** - High-performance 2D WebGL renderer for chart graphics
+- **D3-scale 4.0.2** - Professional tick generation and intelligent spacing algorithms
 - **SVG** - Scalable vector graphics for crosshair overlay system
 - **Create React App 5.0.1** - Development environment and build tools
 
 **Architecture:**
+- **DRY Principles** - Centralized AxisUtils.js eliminating code duplication
+- **D3 Integration** - Professional tick generation with d3-scale algorithms
 - **Hybrid Rendering** - PIXI.js WebGL + SVG overlay for optimal performance
 - **Responsive System** - Dynamic axis sizing with ResizeObserver and Canvas text measurement
 - **SVG Grid Patterns** - Professional trading chart grid system with major/minor lines
 - **Modern React Patterns** - Hooks, refs, imperative handles, memoization
 - **Component Architecture** - Modular, reusable chart components
+- **JSDoc Documentation** - Comprehensive function documentation system
 - **Performance Optimized** - Memory management, efficient rendering, FPS monitoring
 
 ## 📦 Installation
@@ -112,13 +119,15 @@ pixistockchart/
 │   │   ├── StockChart.js        # ✨ Main PIXI.js chart with Turkish localization & responsive design
 │   │   ├── components/          # Chart components
 │   │   │   ├── SvgCrosshair.js  # ✨ Turkish-localized crosshair with 24h time format
-│   │   │   ├── SvgXAxis.js      # ✨ Dynamic X-axis with responsive sizing and SVG grid
-│   │   │   ├── SvgYAxis.js      # ✨ Dynamic Y-axis with responsive sizing and SVG grid
+│   │   │   ├── SvgXAxis.js      # ✨ Dynamic X-axis with D3 tick system and responsive sizing
+│   │   │   ├── SvgYAxis.js      # ✨ Dynamic Y-axis with D3 tick system and responsive sizing
 │   │   │   └── SvgGrid.js       # ✨ Professional SVG grid pattern system
 │   │   ├── hooks/               # Custom React hooks
 │   │   │   ├── useResponsiveAxis.js # ✨ Responsive axis sizing with ResizeObserver
 │   │   │   └── index.js         # Hooks barrel export
 │   │   └── utils/               # Modular utility functions
+│   │       ├── AxisUtils.js     # ✨ DRY centralized axis utilities with D3 integration
+│   │       ├── tickUtils.js     # ✨ D3-based professional tick generation algorithms
 │   │       ├── gridUtils/       # ✨ Modular grid system with Turkish date formatting
 │   │       │   └── index.js     # Grid utilities (Turkish month names, etc.)
 │   │       ├── coordinateUtils.js # ✨ Chart coordinate calculations with dynamic margins
@@ -134,8 +143,10 @@ pixistockchart/
 
 **Key Files:**
 - 🎯 **StockChart.js** - Main PIXI.js chart with responsive design and Turkish localization
+- 🎯 **AxisUtils.js** - DRY centralized axis utilities with D3 tick generation
+- 🎯 **tickUtils.js** - Professional D3-based tick algorithms with 2-digit precision
 - 🎯 **useResponsiveAxis.js** - Custom hook for dynamic axis sizing with ResizeObserver
-- 🎯 **SvgXAxis.js & SvgYAxis.js** - Dynamic axis components with responsive sizing
+- 🎯 **SvgXAxis.js & SvgYAxis.js** - Dynamic axis components with D3 integration
 - 🎯 **SvgGrid.js** - Professional SVG grid pattern system
 - 🎯 **coordinateUtils.js** - Chart coordinate transformations with dynamic margins
 - 🎯 **priceCalculations.js** - Price formatting and range calculations
@@ -156,10 +167,13 @@ pixistockchart/
 ## 🔧 Technical Implementation
 
 ### Modular Architecture
+- **DRY Architecture**: AxisUtils.js centralizes all axis-related calculations
+- **D3 Integration**: Professional tick generation with d3-scale algorithms
 - **PIXI.js v8 Layer**: Enhanced chart rendering with null-safety and error handling
 - **SVG Grid System**: Professional trading chart grid patterns with major/minor lines
 - **Responsive Hook System**: useResizeObserver and useResponsiveAxis for dynamic sizing
 - **Dynamic Text Measurement**: Canvas API-based text sizing for precise axis dimensions
+- **JSDoc Documentation**: Comprehensive function documentation with @param/@returns
 - **Responsive Design**: Eliminated hardcoded values, adaptive to all screen sizes
 - **Communication**: Efficient React hooks and ref-based component interaction
 
@@ -171,9 +185,11 @@ pixistockchart/
 - **Throttled Events**: 100ms throttled resize for performance optimization
 
 ### Key Technical Components
+- **AxisUtils.js**: DRY centralized axis system with D3 tick generation
+- **tickUtils.js**: Professional D3-based tick algorithms with 2-digit decimal precision
 - **StockChart.js**: Enhanced PIXI.js component with responsive design and Turkish localization
 - **useResponsiveAxis.js**: Custom hook with ResizeObserver and Canvas-based text measurement
-- **SvgXAxis/SvgYAxis**: Dynamic axis components with responsive sizing
+- **SvgXAxis/SvgYAxis**: Dynamic axis components with D3 intelligent spacing
 - **SvgGrid.js**: Professional SVG pattern-based grid system
 - **coordinateUtils.js**: Chart coordinate calculations with dynamic margins
 
@@ -208,7 +224,20 @@ pixistockchart/
 - **Memory Management**: Comprehensive cleanup of PIXI objects, null-safety checks
 - **Adaptive Design**: Eliminates hardcoded dimensions, scales to any screen size
 
-## 🚀 Recent Updates (v1.3.0)
+## 🚀 Recent Updates (v1.4.0)
+
+- ✅ **DRY Architecture Implementation**: Created AxisUtils.js centralizing all axis calculations
+- ✅ **D3 Professional Tick System**: Integrated d3-scale for intelligent tick generation
+- ✅ **2-Digit Decimal Precision**: All price ticks display exactly 2 decimals (39.60 format)
+- ✅ **JSDoc Documentation**: Comprehensive function documentation with @param/@returns
+- ✅ **Code Deduplication**: Eliminated repeated logic between axis components
+- ✅ **Turkish Localization**: Enhanced date formatting with centralized TURKISH_MONTH_NAMES
+- ✅ **Professional Standards**: Human-readable tick values following trading platform conventions
+- ✅ **Centralized Constants**: AXIS_PRESETS for consistent spacing and formatting
+- ✅ **PropTypes Removal**: Eliminated deprecated PropTypes dependency
+- ✅ **Maintainable Architecture**: Single source of truth for all axis-related logic
+
+### Previous Updates (v1.3.0)
 
 - ✅ **Fully Responsive Design**: Eliminated all hardcoded axis dimensions (50px/25px)
 - ✅ **Dynamic Axis Sizing**: Canvas-based text measurement for precise dimensions

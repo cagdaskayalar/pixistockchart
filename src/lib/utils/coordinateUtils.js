@@ -1,14 +1,33 @@
 /**
- * Coordinate transformation utilities for chart rendering
+ * @fileoverview Coordinate transformation utilities for chart rendering
+ * Provides functions for converting between data indices and screen coordinates,
+ * calculating chart dimensions, grid positioning, and candlestick sizing for responsive charts.
+ * 
+ * @author Mehmet Çağdaş Kayalarlıoğulları
+ * @version 1.3.0
+ * @since 2024-01-01
  */
 
 /**
  * Calculates chart margins and dimensions
- * @param {number} width - Total width
- * @param {number} height - Total height
- * @param {Object} customMargins - Custom margin overrides
- * @param {Object} axisDimensions - Dynamic axis dimensions { yAxisWidth, xAxisHeight }
+ * @param {number} width - Total container width in pixels
+ * @param {number} height - Total container height in pixels
+ * @param {Object} [customMargins={}] - Custom margin overrides
+ * @param {number} [customMargins.top] - Top margin override
+ * @param {number} [customMargins.right] - Right margin override
+ * @param {number} [customMargins.bottom] - Bottom margin override
+ * @param {number} [customMargins.left] - Left margin override
+ * @param {Object} [axisDimensions={}] - Dynamic axis dimensions
+ * @param {number} [axisDimensions.yAxisWidth=50] - Y-axis width in pixels
+ * @param {number} [axisDimensions.xAxisHeight=25] - X-axis height in pixels
  * @returns {Object} Margin and dimension calculations
+ * @returns {Object} returns.margin - Calculated margins {top, right, bottom, left}
+ * @returns {number} returns.chartWidth - Available chart width (excluding margins)
+ * @returns {number} returns.chartHeight - Available chart height (excluding margins)
+ * @example
+ * // Calculate chart dimensions with custom axis sizes
+ * const dims = calculateChartDimensions(800, 600, {}, { yAxisWidth: 60, xAxisHeight: 30 });
+ * console.log(`Chart area: ${dims.chartWidth}x${dims.chartHeight}`);
  */
 export const calculateChartDimensions = (width, height, customMargins = {}, axisDimensions = {}) => {
 	const { yAxisWidth = 50, xAxisHeight = 25 } = axisDimensions;
@@ -24,10 +43,13 @@ export const calculateChartDimensions = (width, height, customMargins = {}, axis
 
 /**
  * Converts data index to X coordinate
- * @param {number} index - Data point index
- * @param {number} canvasWidth - Canvas width per candle
- * @param {number} marginLeft - Left margin
- * @returns {number} X coordinate
+ * @param {number} index - Data point index (0-based array index)
+ * @param {number} canvasWidth - Canvas width per candle in pixels
+ * @param {number} marginLeft - Left margin in pixels
+ * @returns {number} X coordinate in pixels (center of candle)
+ * @example
+ * // Get X position for 5th candle with 10px width and 20px margin
+ * const x = indexToX(4, 10, 20); // Returns 65 (20 + (4 + 0.5) * 10)
  */
 export const indexToX = (index, canvasWidth, marginLeft) => {
 	return marginLeft + (index + 0.5) * canvasWidth;

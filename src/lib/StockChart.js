@@ -1,3 +1,13 @@
+/**
+ * @fileoverview Professional Stock Chart Component with PIXI.js WebGL Rendering
+ * High-performance candlestick chart with Turkish localization, interactive crosshair,
+ * responsive design, SVG overlay system, and comprehensive trading chart features.
+ * 
+ * @author Mehmet Çağdaş Kayalarlıoğulları
+ * @version 1.3.0
+ * @since 2024-01-01
+ */
+
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import * as PIXI from 'pixi.js';
 import { getData } from '../dataUtils';
@@ -18,6 +28,131 @@ import SvgGrid from './components/SvgGrid';
 import { createChartBackground } from './utils/gridUtils';
 import { useResizeObserver, calculateAxisDimensions } from './hooks/useResponsiveAxis';
 
+/**
+ * @typedef {Object} StockCandle
+ * @property {Date|string} date - Date of the candle (Date object or ISO string)
+ * @property {number} open - Opening price
+ * @property {number} high - Highest price
+ * @property {number} low - Lowest price
+ * @property {number} close - Closing price
+ * @property {number} [volume] - Trading volume (optional)
+ */
+
+/**
+ * @typedef {Object} PerformanceMetrics
+ * @property {number} renderTime - Time taken for rendering in milliseconds
+ * @property {number} dataCount - Number of data points processed
+ * @property {number} visibleCandles - Number of currently visible candles
+ * @property {number} fps - Frames per second (if available)
+ * @property {string} timestamp - ISO timestamp of the measurement
+ */
+
+/**
+ * @typedef {Object} ChartBounds
+ * @property {number} top - Top boundary of the chart area in pixels
+ * @property {number} bottom - Bottom boundary of the chart area in pixels
+ * @property {number} left - Left boundary of the chart area in pixels
+ * @property {number} right - Right boundary of the chart area in pixels
+ */
+
+/**
+ * @typedef {Object} ViewState
+ * @property {number} startIndex - Starting index in the data array for visible range
+ * @property {number} maxCandles - Maximum number of candles that can fit in view
+ * @property {number} canvasWidth - Width allocated per candle in pixels
+ * @property {Object} priceCalculations - Price calculation parameters
+ * @property {number} priceCalculations.priceMin - Minimum visible price
+ * @property {number} priceCalculations.priceMax - Maximum visible price
+ * @property {number} priceCalculations.priceDiff - Price range difference
+ * @property {number} priceCalculations.chartTop - Chart top coordinate
+ * @property {number} priceCalculations.chartHeight - Chart height in pixels
+ */
+
+/**
+ * @callback OnPerformanceUpdateCallback
+ * @param {PerformanceMetrics} metrics - Performance metrics object
+ * @returns {void}
+ */
+
+/**
+ * Professional stock chart component built with PIXI.js WebGL rendering engine.
+ * Features include responsive design, Turkish localization, interactive crosshair,
+ * SVG overlay system, grid patterns, and high-performance candlestick rendering.
+ * 
+ * Key Features:
+ * - WebGL-accelerated rendering via PIXI.js v8
+ * - Responsive design with dynamic axis sizing
+ * - Turkish date/time localization (tr-TR)
+ * - Latest-data-first display (professional trading platform style)
+ * - Interactive crosshair with smart candle snapping
+ * - SVG overlay system for UI elements
+ * - Professional grid patterns and axis labels
+ * - Real-time performance monitoring
+ * - Touch and mouse interaction support
+ * 
+ * @component
+ * @param {Object} props - Component properties
+ * @param {OnPerformanceUpdateCallback} [props.onPerformanceUpdate] - Callback for performance metrics updates
+ * @returns {React.ReactElement} The stock chart component with container and overlays
+ * 
+ * @example
+ * // Basic usage
+ * <StockChart />
+ * 
+ * @example
+ * // With performance monitoring
+ * <StockChart 
+ *   onPerformanceUpdate={(metrics) => {
+ *     console.log(`Render time: ${metrics.renderTime}ms`);
+ *     console.log(`Visible candles: ${metrics.visibleCandles}`);
+ *   }}
+ * />
+ * 
+ * @example
+ * // In a trading dashboard
+ * function TradingDashboard() {
+ *   const [performance, setPerformance] = useState(null);
+ *   
+ *   return (
+ *     <div className="trading-dashboard">
+ *       <StockChart onPerformanceUpdate={setPerformance} />
+ *       {performance && (
+ *         <div className="performance-info">
+ *           FPS: {performance.fps} | Candles: {performance.visibleCandles}
+ *         </div>
+ *       )}
+ *     </div>
+ *   );
+ * }
+ * 
+ * @throws {Error} Throws error if PIXI.js fails to initialize WebGL context
+ * @throws {Error} Throws error if data fetching fails
+ * 
+ * @see {@link https://pixijs.com/|PIXI.js Documentation}
+ * @see {@link https://github.com/cagdaskayalar/pixistockchart|GitHub Repository}
+ */
+
+/**
+ * Professional Trading Chart Component with PIXI.js and SVG overlay
+ * Features Turkish localization, real-time crosshair, dynamic grid, and high-performance rendering
+ * @component
+ * @param {Object} props - Component props
+ * @param {Function} [props.onPerformanceUpdate] - Callback for performance metrics updates
+ * @param {number} props.onPerformanceUpdate.renderTime - Render time in milliseconds
+ * @param {number} props.onPerformanceUpdate.fps - Current FPS
+ * @param {number} props.onPerformanceUpdate.memoryUsage - Memory usage in MB
+ * @param {number} props.onPerformanceUpdate.visibleCandles - Number of visible candles
+ * @param {number} props.onPerformanceUpdate.totalCandles - Total number of candles
+ * @param {number} props.onPerformanceUpdate.candleWidth - Current candle width in pixels
+ * @param {number} props.onPerformanceUpdate.startIndex - Current start index in dataset
+ * @param {string} props.onPerformanceUpdate.priceRange - Formatted price range string
+ * @returns {JSX.Element} Stock chart component with canvas and SVG overlays
+ * @example
+ * // Basic usage with performance monitoring
+ * <StockChart onPerformanceUpdate={(metrics) => {
+ *   console.log(`FPS: ${metrics.fps}, Render: ${metrics.renderTime}ms`);
+ * }} />
+ */
 const StockChart = ({ onPerformanceUpdate }) => {
 	const canvasRef = useRef(null);
 	const appRef = useRef(null);

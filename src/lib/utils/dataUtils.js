@@ -1,12 +1,36 @@
 /**
- * Stock data generation utilities
+ * @fileoverview Stock data generation and manipulation utilities
+ * Provides functions for generating sample OHLCV data, calculating technical indicators,
+ * and filtering data by date ranges for professional trading chart applications.
+ * 
+ * @author Mehmet Çağdaş Kayalarlıoğulları
+ * @version 1.3.0
+ * @since 2024-01-01
  */
 
 /**
  * Generates sample stock data for testing and demonstration
- * @param {number} days - Number of days to generate data for
- * @param {Object} options - Configuration options
- * @returns {Array} Array of stock data objects
+ * @param {number} [days=2000] - Number of days to generate data for
+ * @param {Object} [options={}] - Configuration options
+ * @param {number} [options.startPrice=100] - Starting price for the first candle
+ * @param {Date} [options.startDate=new Date('2024-01-01')] - Starting date for data generation
+ * @param {number} [options.volatility=6] - Price volatility factor (higher = more volatile)
+ * @param {number} [options.volumeMin=500000] - Minimum volume per candle
+ * @param {number} [options.volumeMax=2500000] - Maximum volume per candle
+ * @returns {Array<Object>} Array of stock data objects with OHLCV properties
+ * @returns {string} returns[].date - Date in YYYY-MM-DD format
+ * @returns {number} returns[].open - Opening price
+ * @returns {number} returns[].high - Highest price
+ * @returns {number} returns[].low - Lowest price
+ * @returns {number} returns[].close - Closing price
+ * @returns {number} returns[].volume - Trading volume
+ * @example
+ * // Generate 100 days of data with custom options
+ * const data = generateStockData(100, {
+ *   startPrice: 50,
+ *   volatility: 3,
+ *   startDate: new Date('2024-06-01')
+ * });
  */
 export const generateStockData = (days = 2000, options = {}) => {
 	const {
@@ -48,9 +72,19 @@ export const generateStockData = (days = 2000, options = {}) => {
 
 /**
  * Calculates technical indicators from stock data
- * @param {Array} data - Stock data array
- * @param {number} period - Period for calculations
- * @returns {Object} Technical indicators
+ * @param {Array<Object>} data - Stock data array with OHLCV properties
+ * @param {Object} data[].close - Closing price for each data point
+ * @param {Object} data[].volume - Trading volume for each data point
+ * @param {number} [period=20] - Period for calculations (number of candles to include)
+ * @returns {Object|null} Technical indicators object, null if insufficient data
+ * @returns {number} returns.sma - Simple Moving Average over the specified period
+ * @returns {number} returns.avgVolume - Average volume over the specified period
+ * @example
+ * // Calculate 14-period indicators
+ * const indicators = calculateTechnicalIndicators(stockData, 14);
+ * if (indicators) {
+ *   console.log(`SMA: ${indicators.sma}, Avg Volume: ${indicators.avgVolume}`);
+ * }
  */
 export const calculateTechnicalIndicators = (data, period = 20) => {
 	if (!data || data.length < period) return null;
@@ -72,10 +106,16 @@ export const calculateTechnicalIndicators = (data, period = 20) => {
 
 /**
  * Filters data for a specific date range
- * @param {Array} data - Stock data array
- * @param {string} startDate - Start date (YYYY-MM-DD)
- * @param {string} endDate - End date (YYYY-MM-DD)
- * @returns {Array} Filtered data
+ * @param {Array<Object>} data - Stock data array with date properties
+ * @param {Object} data[].date - Date property (string or Date object)
+ * @param {string} startDate - Start date in YYYY-MM-DD format (inclusive)
+ * @param {string} endDate - End date in YYYY-MM-DD format (inclusive)
+ * @returns {Array<Object>} Filtered data array containing only items within the date range
+ * @throws {Error} Throws error if date format is invalid
+ * @example
+ * // Filter data for January 2024
+ * const filtered = filterDataByDateRange(stockData, '2024-01-01', '2024-01-31');
+ * console.log(`Found ${filtered.length} items in date range`);
  */
 export const filterDataByDateRange = (data, startDate, endDate) => {
 	return data.filter(item => {

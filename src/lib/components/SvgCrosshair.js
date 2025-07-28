@@ -2,6 +2,105 @@ import React, { useState, useRef, useImperativeHandle, forwardRef } from 'react'
 import { isPointInChartBounds, xToIndex } from '../utils/coordinateUtils';
 import { yToPrice } from '../utils/priceCalculations';
 
+/**
+ * @fileoverview SVG Crosshair component for professional trading charts
+ * Provides interactive crosshair functionality with Turkish localization,
+ * smart candle snapping, and real-time price/time display.
+ * 
+ * @author Mehmet Çağdaş Kayalarlıoğulları
+ * @version 1.3.0
+ * @since 2024-01-01
+ */
+
+/**
+ * @typedef {Object} StockCandle
+ * @property {Date|string} date - Date of the candle (Date object or ISO string)
+ * @property {number} open - Opening price
+ * @property {number} high - Highest price  
+ * @property {number} low - Lowest price
+ * @property {number} close - Closing price
+ * @property {number} volume - Trading volume
+ */
+
+/**
+ * @typedef {Object} ChartBounds
+ * @property {number} top - Top boundary of the chart area
+ * @property {number} bottom - Bottom boundary of the chart area
+ * @property {number} left - Left boundary of the chart area
+ * @property {number} right - Right boundary of the chart area
+ */
+
+/**
+ * @typedef {Object} ChartMargin
+ * @property {number} top - Top margin in pixels
+ * @property {number} bottom - Bottom margin in pixels
+ * @property {number} left - Left margin in pixels
+ * @property {number} right - Right margin in pixels
+ */
+
+/**
+ * @typedef {Object} ViewStateRef
+ * @property {Object} current - Current view state object
+ * @property {Object} current.priceCalculations - Price calculation parameters
+ * @property {number} current.priceCalculations.priceMin - Minimum visible price
+ * @property {number} current.priceCalculations.priceDiff - Price range difference
+ * @property {number} current.priceCalculations.chartTop - Chart top coordinate
+ * @property {number} current.priceCalculations.chartHeight - Chart height
+ * @property {number} current.canvasWidth - Width per candle in pixels
+ * @property {number} current.maxCandles - Maximum visible candles
+ * @property {number} current.startIndex - Starting data index for visible range
+ */
+
+/**
+ * @typedef {Object} CrosshairState
+ * @property {boolean} visible - Whether crosshair is currently visible
+ * @property {number} x - X coordinate of crosshair
+ * @property {number} y - Y coordinate of crosshair
+ * @property {number} price - Price value at crosshair position
+ * @property {string} time - Formatted time string for display
+ * @property {number} dataIndex - Index in the data array
+ */
+
+/**
+ * @callback OnCandleHoverCallback
+ * @param {StockCandle} candle - The candle being hovered
+ * @param {number} dataIndex - Index of the candle in visible data
+ * @returns {void}
+ */
+
+/**
+ * Interactive SVG crosshair component for professional trading charts.
+ * Features Turkish localization, smart candle snapping, and real-time price display.
+ * 
+ * @component
+ * @param {Object} props - Component properties
+ * @param {StockCandle[]} props.stockData - Array of stock candle data
+ * @param {ViewStateRef} props.viewState - Ref object containing current view state
+ * @param {ChartBounds} props.chartBounds - Chart area boundaries
+ * @param {ChartMargin} props.margin - Chart margins for positioning
+ * @param {OnCandleHoverCallback} [props.onCandleHover] - Callback when hovering over candles
+ * @param {React.Ref} ref - Forward ref for imperative updates
+ * @returns {React.ReactElement|null} SVG crosshair element or null if no chart bounds
+ * 
+ * @example
+ * // Basic usage with required props
+ * const crosshairRef = useRef();
+ * 
+ * <SvgCrosshair
+ *   ref={crosshairRef}
+ *   stockData={candleData}
+ *   viewState={viewStateRef}
+ *   chartBounds={{ top: 50, bottom: 400, left: 50, right: 600 }}
+ *   margin={{ top: 10, bottom: 10, left: 10, right: 10 }}
+ *   onCandleHover={(candle, index) => console.log('Hovered candle:', candle)}
+ * />
+ * 
+ * @example
+ * // Update crosshair programmatically
+ * crosshairRef.current?.updateCrosshair(mouseX, mouseY, true);
+ * 
+ * @see {@link https://github.com/cagdaskayalar/pixistockchart|GitHub Repository}
+ */
 const SvgCrosshair = forwardRef(({ 
 	stockData, 
 	viewState, 
@@ -9,6 +108,10 @@ const SvgCrosshair = forwardRef(({
 	margin,
 	onCandleHover 
 }, ref) => {
+	/**
+	 * @type {CrosshairState}
+	 * @description Internal state for crosshair position and visibility
+	 */
 	const [crosshair, setCrosshair] = useState({
 		visible: false,
 		x: 0,
@@ -18,10 +121,34 @@ const SvgCrosshair = forwardRef(({
 		dataIndex: -1
 	});
 
+	/**
+	 * @type {React.RefObject<SVGSVGElement>}
+	 * @description Reference to the SVG element for direct DOM access
+	 */
 	const svgRef = useRef(null);
 
-	// Expose updateCrosshair method to parent
+	/**
+	 * Exposes updateCrosshair method to parent component via imperative handle
+	 * @type {Object}
+	 * @property {function} updateCrosshair - Updates crosshair position and visibility
+	 */
 	useImperativeHandle(ref, () => ({
+		/**
+		 * Updates crosshair position based on mouse coordinates
+		 * @param {number} mouseX - Mouse X coordinate in pixels
+		 * @param {number} mouseY - Mouse Y coordinate in pixels  
+		 * @param {boolean} enabled - Whether crosshair should be enabled
+		 * @returns {void}
+		 * @throws {Error} No error thrown, gracefully handles invalid states
+		 * 
+		 * @example
+		 * // Enable crosshair at specific position
+		 * crosshairRef.current.updateCrosshair(250, 150, true);
+		 * 
+		 * @example
+		 * // Disable crosshair
+		 * crosshairRef.current.updateCrosshair(0, 0, false);
+		 */
 		updateCrosshair: (mouseX, mouseY, enabled) => {
 			if (!enabled || !stockData || !viewState.current || !chartBounds) {
 				setCrosshair(prev => ({ ...prev, visible: false }));

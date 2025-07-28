@@ -1,6 +1,117 @@
 import React, { forwardRef, useImperativeHandle } from 'react';
-import { indexToX } from '../utils/coordinateUtils';
+import { generateYAxisConfig, generateXAxisConfig, AXIS_PRESETS } from '../utils/AxisUtils';
 
+/**
+ * @fileoverview SVG Grid component for professional trading charts
+ * Provides comprehensive grid system with both horizontal and vertical lines,
+ * professional styling, and responsive design.
+ * 
+ * @author Mehmet Çağdaş Kayalarlıoğulları
+ * @version 1.3.0
+ * @since 2024-01-01
+ */
+
+/**
+ * @typedef {Object} StockCandle
+ * @property {Date|string} date - Date of the candle (Date object or ISO string)
+ * @property {number} open - Opening price
+ * @property {number} high - Highest price  
+ * @property {number} low - Lowest price
+ * @property {number} close - Closing price
+ * @property {number} [volume] - Trading volume (optional)
+ */
+
+/**
+ * @typedef {Object} ChartBounds
+ * @property {number} top - Top boundary of the chart area in pixels
+ * @property {number} bottom - Bottom boundary of the chart area in pixels
+ * @property {number} left - Left boundary of the chart area in pixels
+ * @property {number} right - Right boundary of the chart area in pixels
+ */
+
+/**
+ * @typedef {Object} TimeGridIndex
+ * @property {number} index - Index in the visible data array
+ * @property {number} x - X coordinate for the grid line
+ * @property {string} label - Formatted time label for display
+ */
+
+/**
+ * @typedef {Object} TickInfo
+ * @property {number} value - The tick value (price or coordinate)
+ * @property {string} formattedValue - Human-readable formatted string
+ * @property {number} position - Y coordinate for price ticks, X coordinate for time ticks
+ * @property {string} key - Unique key for React rendering
+ */
+
+/**
+ * @typedef {Object} GridLine
+ * @property {number} x - X coordinate for vertical lines
+ * @property {number} y - Y coordinate for horizontal lines
+ * @property {string|number} price - Price value for horizontal lines
+ * @property {string} key - Unique key for React rendering
+ * @property {boolean} isMainTick - Whether this is a major tick line
+ */
+
+/**
+ * SVG-based grid component for displaying comprehensive chart grid lines.
+ * Features both horizontal (price) and vertical (time) grid lines with
+ * professional styling, customizable density, and responsive design.
+ * 
+ * @component
+ * @param {Object} props - Component properties
+ * @param {ChartBounds} props.chartBounds - Chart area boundaries for positioning
+ * @param {StockCandle[]} props.visibleData - Array of currently visible stock data
+ * @param {TimeGridIndex[]} props.timeGridIndices - Array of time grid positions and labels
+ * @param {number} props.canvasWidth - Width per candle in pixels for coordinate calculation
+ * @param {number} props.priceMin - Minimum price value in the visible range
+ * @param {number} props.priceMax - Maximum price value in the visible range
+ * @param {number} props.priceDiff - Price range difference (priceMax - priceMin)
+ * @param {number} [props.gridLines=8] - Number of horizontal grid lines to display
+ * @param {boolean} [props.showGrid=true] - Whether to display grid lines
+ * @param {React.Ref} ref - Forward ref for imperative updates
+ * @returns {React.ReactElement|null} SVG grid element or null if no chart bounds
+ * 
+ * @example
+ * // Complete grid system
+ * const gridRef = useRef();
+ * 
+ * <SvgGrid
+ *   ref={gridRef}
+ *   chartBounds={{ top: 50, bottom: 400, left: 50, right: 600 }}
+ *   visibleData={candleData}
+ *   timeGridIndices={timeIndices}
+ *   canvasWidth={8}
+ *   priceMin={100.50}
+ *   priceMax={105.75}
+ *   priceDiff={5.25}
+ *   gridLines={10}
+ *   showGrid={true}
+ * />
+ * 
+ * @example
+ * // Grid disabled
+ * <SvgGrid
+ *   chartBounds={chartBounds}
+ *   visibleData={visibleData}
+ *   timeGridIndices={timeIndices}
+ *   canvasWidth={candleWidth}
+ *   priceMin={priceRange.min}
+ *   priceMax={priceRange.max}
+ *   priceDiff={priceRange.diff}
+ *   showGrid={false}
+ * />
+ * 
+ * @example
+ * // Update grid imperatively
+ * useEffect(() => {
+ *   gridRef.current?.updateGrid();
+ * }, [dataChanged, priceRangeChanged]);
+ * 
+ * @throws {Error} No errors thrown, gracefully handles invalid props
+ * @see {@link indexToX} Used for coordinate calculations
+ * @see {@link https://github.com/cagdaskayalar/pixistockchart|GitHub Repository}
+ */
 const SvgGrid = forwardRef(({ 
 	chartBounds,
 	priceMin,
@@ -12,9 +123,26 @@ const SvgGrid = forwardRef(({
 	gridLines = 8,
 	showGrid = true 
 }, ref) => {
-	
-	// Expose update method to parent
+	/**
+	 * Exposes updateGrid method to parent component via imperative handle
+	 * @type {Object}
+	 * @property {function} updateGrid - Updates grid data for both price and time axes
+	 */
 	useImperativeHandle(ref, () => ({
+		/**
+		 * Updates grid data for both price and time dimensions (currently handled via props)
+		 * @param {PriceUpdateData} newPrices - New price range data
+		 * @param {TimeUpdateData} newTimeData - New time grid data
+		 * @returns {void}
+		 * @deprecated Grid updates are now handled automatically via props
+		 * 
+		 * @example
+		 * // Update grid data (handled automatically via props)
+		 * gridRef.current.updateGrid(
+		 *   { priceMin: 90, priceMax: 110, priceDiff: 20 },
+		 *   { visibleData: newData, timeGridIndices: newIndices, canvasWidth: 10 }
+		 * );
+		 */
 		updateGrid: (newPrices, newTimeData) => {
 			// Grid güncellemeleri otomatik olarak props üzerinden gelecek
 		}
@@ -22,40 +150,59 @@ const SvgGrid = forwardRef(({
 
 	if (!chartBounds || priceDiff === 0 || !visibleData || !timeGridIndices || !showGrid) return null;
 
-	// Price lines calculation
-	const verticalPadding = (chartBounds.bottom - chartBounds.top) * 0.0125;
-	const effectiveHeight = (chartBounds.bottom - chartBounds.top) - (2 * verticalPadding);
+	/**
+	 * @type {number}
+	 * @description Chart dimensions for rendering calculations
+	 */
+	const chartHeight = chartBounds.bottom - chartBounds.top;
+	const chartWidth = chartBounds.right - chartBounds.left;
 
-	const priceLines = [];
-	for (let i = 0; i <= gridLines; i++) {
-		const y = chartBounds.top + verticalPadding + (effectiveHeight / gridLines) * i;
-		const price = priceMax - (priceDiff / gridLines) * i;
-		
-		priceLines.push({
-			y,
-			price: price.toFixed(2),
-			key: `price-${i}`,
-			isMainTick: true // Ana tick çizgileri
-		});
-	}
+	/**
+	 * @type {Object}
+	 * @description Complete Y-axis configuration using centralized AxisUtils
+	 */
+	const yAxisConfig = generateYAxisConfig({
+		chartBounds,
+		priceMin,
+		priceMax,
+		desiredTickCount: Math.max(gridLines, 10),
+		minTickSpacing: 45, // Increased for better grid readability
+		maxPriceTicks: AXIS_PRESETS.PRICE_AXIS.maxPriceTicks
+	});
 
-	// Time lines calculation
-	const timeLines = timeGridIndices.map(dataIndex => {
-		if (!visibleData[dataIndex]) return null;
-		
-		const x = indexToX(dataIndex, canvasWidth, chartBounds.left);
-		
-		return {
-			x,
-			key: `time-${dataIndex}`,
-			isMainTick: true // Ana tick çizgileri
-		};
-	}).filter(Boolean);
+	/**
+	 * @type {Object}
+	 * @description Complete X-axis configuration using centralized AxisUtils
+	 */
+	const xAxisConfig = generateXAxisConfig({
+		chartBounds,
+		timeGridIndices,
+		canvasWidth,
+		minTickSpacing: 45, // Grid spacing (different from axis labels)
+		maxTimeTicks: 12
+	});
+
+	/**
+	 * @type {GridLine[]}
+	 * @description Horizontal price grid lines with D3-generated positions
+	 */
+	const priceLines = yAxisConfig.priceLines.map(line => ({
+		...line,
+		isMainTick: true
+	}));
+
+	/**
+	 * @type {GridLine[]}
+	 * @description Vertical time grid lines with optimized positions
+	 */
+	const timeLines = xAxisConfig.timeTicks.map(tick => ({
+		x: tick.position,
+		key: tick.key,
+		isMainTick: true
+	}));
 
 	// Minor grid calculation (ara çizgiler için)
 	const minorGridSize = 20; // px cinsinden minor grid boyutu
-	const chartWidth = chartBounds.right - chartBounds.left;
-	const chartHeight = chartBounds.bottom - chartBounds.top;
 
 	return (
 		<div style={{
