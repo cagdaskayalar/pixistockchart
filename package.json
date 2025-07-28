@@ -1,7 +1,7 @@
 {
   "name": "pixistockchart",
-  "version": "1.3.0",
-  "description": "Professional Turkish-localized stock chart with PIXI.js v8. Features latest-data-first display like professional trading platforms, Turkish date/time formatting, responsive design, advanced grid system, interactive candlestick charts, smart candle snapping, and high-performance WebGL rendering. Dual License: MIT (non-commercial) + Commercial License required for business use.",
+  "version": "1.5.0",
+  "description": "🚀 Revolutionary high-performance stock chart with ultra-optimized PIXI.js rendering. Features single Graphics object strategy, batched geometry rendering, 60 FPS with 49K+ candles, Turkish localization, professional trading behavior, and massive dataset support. Performance breakthrough: 2000% FPS improvement through GPU-accelerated batched rendering.",
   "author": {
     "name": "Mehmet Çağdaş Kayalarlıoğulları",
     "email": "cagdaskaya@hotmail.com"

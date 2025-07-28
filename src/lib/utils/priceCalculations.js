@@ -40,10 +40,17 @@ export const calculatePriceRange = (visibleData, paddingPercent = 0.1) => {
 		};
 	}
 
-	// Extract all price values
-	const prices = visibleData.flatMap(d => [d.open, d.high, d.low, d.close]);
-	const minPrice = Math.min(...prices);
-	const maxPrice = Math.max(...prices);
+	// Stack-safe price range calculation for large datasets
+	let minPrice = Infinity;
+	let maxPrice = -Infinity;
+	
+	// Loop-based min/max to avoid stack overflow with large arrays
+	for (const data of visibleData) {
+		const { open, high, low, close } = data;
+		minPrice = Math.min(minPrice, open, high, low, close);
+		maxPrice = Math.max(maxPrice, open, high, low, close);
+	}
+	
 	const priceRange = maxPrice - minPrice;
 	const padding = priceRange * paddingPercent;
 	const priceMin = minPrice - padding;

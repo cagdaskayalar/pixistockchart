@@ -122,7 +122,20 @@ export const isPointInChartBounds = (x, y, bounds) => {
  * @param {number} zoomFactor - Zoom factor
  * @returns {number} Constrained candle width
  */
-export const constrainCandleWidth = (currentWidth, zoomFactor, minWidth = 4, maxWidth = 100) => {
+export const constrainCandleWidth = (currentWidth, zoomFactor, minWidth = 0.1, maxWidth = 100, chartWidth = null, totalDataCount = null) => {
 	const newWidth = currentWidth * zoomFactor;
-	return Math.max(minWidth, Math.min(maxWidth, newWidth));
+	
+	// Eğer chart genişliği ve total data sayısı verilmişse, dinamik minimum hesapla
+	let dynamicMinWidth = minWidth;
+	if (chartWidth && totalDataCount && totalDataCount > 0) {
+		// Tüm datayi göstermek için gereken minimum width (daha agresif)
+		dynamicMinWidth = Math.max(0.01, chartWidth / totalDataCount);
+		console.log(`📏 Dynamic min width: ${dynamicMinWidth.toFixed(6)}px (${totalDataCount} data points in ${chartWidth}px)`);
+		console.log(`📏 Theoretical max candles: ${Math.floor(chartWidth / dynamicMinWidth)}`);
+	}
+	
+	const constrainedWidth = Math.max(dynamicMinWidth, Math.min(maxWidth, newWidth));
+	console.log(`📏 Width calculation: current=${currentWidth.toFixed(4)} * factor=${zoomFactor} = ${newWidth.toFixed(4)} → constrained=${constrainedWidth.toFixed(4)}`);
+	
+	return constrainedWidth;
 };

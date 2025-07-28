@@ -212,7 +212,7 @@ const SvgGrid = forwardRef(({
 			width: chartWidth,
 			height: chartHeight,
 			pointerEvents: 'none',
-			zIndex: 1 // Chart'ın arkasında, crosshair'in önünde
+			zIndex: 1 // Canvas ile aynı seviyede ama arkada
 		}}>
 			<svg
 				width={chartWidth}
@@ -235,9 +235,9 @@ const SvgGrid = forwardRef(({
 						<path 
 							d={`M ${minorGridSize} 0 L 0 0 0 ${minorGridSize}`} 
 							fill="none" 
-							stroke="#222222" 
-							strokeWidth="0.5"
-							opacity="0.2"
+							stroke="#333333" 
+							strokeWidth="1"
+							opacity="0.4"
 						/>
 					</pattern>
 					
@@ -256,9 +256,9 @@ const SvgGrid = forwardRef(({
 								y1={line.y - chartBounds.top}
 								x2={chartWidth}
 								y2={line.y - chartBounds.top}
-								stroke="#444444"
-								strokeWidth="1"
-								opacity="0.4"
+								stroke="#555555"
+								strokeWidth="1.5"
+								opacity="0.6"
 							/>
 						))}
 						
@@ -270,9 +270,9 @@ const SvgGrid = forwardRef(({
 								y1="0"
 								x2={line.x - chartBounds.left}
 								y2={chartHeight}
-								stroke="#444444"
-								strokeWidth="1"
-								opacity="0.4"
+								stroke="#555555"
+								strokeWidth="1.5"
+								opacity="0.6"
 							/>
 						))}
 					</pattern>

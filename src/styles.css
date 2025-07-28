@@ -58,46 +58,58 @@
 
 /* Individual metric colors */
 .performance-metrics .render-time {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: transparent;
   color: #ffffff;
-  border-color: #667eea;
+  border: 1px solid #667eea;
+  min-width: 120px;
+  text-align: center;
 }
 
 .performance-metrics .fps {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: transparent;
   color: #ffffff;
-  border-color: #f093fb;
+  border: 1px solid #f093fb;
+  min-width: 80px;
+  text-align: center;
 }
 
 .performance-metrics .memory {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: transparent;
   color: #ffffff;
-  border-color: #4facfe;
+  border: 1px solid #4facfe;
+  min-width: 100px;
+  text-align: center;
 }
 
 .performance-metrics .candles {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: transparent;
   color: #ffffff;
-  border-color: #43e97b;
+  border: 1px solid #43e97b;
+  min-width: 140px;
+  text-align: center;
 }
 
 .performance-metrics .width {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  background: transparent;
   color: #ffffff;
-  border-color: #fa709a;
+  border: 1px solid #fa709a;
+  min-width: 110px;
+  text-align: center;
 }
 
 .performance-metrics .index {
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-  color: #333333;
-  border-color: #a8edea;
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #a8edea;
+  min-width: 120px;
+  text-align: center;
 }
 
 .performance-metrics .price-range {
-  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-  color: #333333;
-  border-color: #ffecd2;
-  min-width: 60px;
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #ffecd2;
+  min-width: 140px;
   text-align: center;
   transition: background-color 0.2s ease;
 }
@@ -119,7 +131,7 @@
 .stock-chart-container {
   width: 100%;
   height: 100%;
-  background-color: #0a0a0a;
+  background-color: #1a1a1a; /* Daha açık background grid'ler için */
   display: flex;
   flex-direction: column;
   position: relative;
@@ -133,6 +145,7 @@
   height: 100%;
   position: relative;
   overflow: hidden;
+  z-index: 1; /* Grid'in üstünde */
 }
 
 /* Ensure PIXI canvas is properly sized */
