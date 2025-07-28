@@ -154,7 +154,7 @@ const SvgCrosshair = forwardRef(({
 					{/* Price label on Y axis */}
 					<g>
 						<rect
-							x={chartBounds.right + 2}
+							x={chartBounds.right}
 							y={crosshair.y - 10}
 							width="60"
 							height="20"
@@ -163,7 +163,7 @@ const SvgCrosshair = forwardRef(({
 							rx="2"
 						/>
 						<text
-							x={chartBounds.right + 32}
+							x={chartBounds.right + 25}
 							y={crosshair.y + 4}
 							textAnchor="middle"
 							fontSize="12"
@@ -178,7 +178,7 @@ const SvgCrosshair = forwardRef(({
 					<g>
 						<rect
 							x={crosshair.x - 40}
-							y={chartBounds.bottom + 2}
+							y={chartBounds.bottom}
 							width="80"
 							height="20"
 							fill="#FFD700"
@@ -187,7 +187,7 @@ const SvgCrosshair = forwardRef(({
 						/>
 						<text
 							x={crosshair.x}
-							y={chartBounds.bottom + 16}
+							y={chartBounds.bottom + 15}
 							textAnchor="middle"
 							fontSize="11"
 							fill="#000"

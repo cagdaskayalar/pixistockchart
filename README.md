@@ -272,11 +272,7 @@ npm run eject      # Eject from Create React App (not recommended)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 Author
+## ‍💻 Author
 
 **Mehmet Çağdaş Kayalarlıoğulları**
 - Email: cagdaskaya@hotmail.com
@@ -300,5 +296,28 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 🔧 **Configuration**: Customizable chart settings, export functionality
 
 ---
+## 📄 License
 
+## 📄 License
+
+This project is licensed under a **Dual License** model:
+
+### 🆓 MIT License (Non-Commercial Use)
+- **Free for personal, educational, and open-source projects**
+- Full access to source code and modification rights
+- No commercial usage permitted
+
+### 💼 Commercial License Required
+- **Paid license required for all commercial use cases:**
+  - SaaS platforms and enterprise applications
+  - Internal business tools and client consulting work
+  - Products generating revenue or commercial value
+  - Any business or organizational use
+
+> ⚠️ **Important Notice:** Commercial use without a valid license is prohibited and may result in legal action.
+
+**To Purchase Commercial License:**
+- 📧 Contact: [cagdaskaya@hotmail.com](mailto:cagdaskaya@hotmail.com)
+- 📋 Please see the [LICENSE](LICENSE) file for complete terms
+- 🌐 GitHub: [@cagdaskayalar](https://github.com/cagdaskayalar)
 Built with ❤️ using React, PIXI.js, and SVG
