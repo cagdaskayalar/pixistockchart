@@ -34,6 +34,57 @@
   gap: 15px;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Chart Type Selector */
+.chart-type-selector {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #404040;
+  background-color: #333333;
+  transition: all 0.2s ease;
+}
+
+.radio-option:hover {
+  background-color: #404040;
+  border-color: #555555;
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: #00dd88;
+  cursor: pointer;
+}
+
+.radio-option input[type="radio"]:checked + .radio-label {
+  color: #00dd88;
+  font-weight: 600;
+}
+
+.radio-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #cccccc;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
 .performance-metrics {
   display: flex;
   gap: 12px;

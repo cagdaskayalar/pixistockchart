@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import StockChart from './lib/StockChart';
+import ManualViewportStockChart from './lib/ManualViewportStockChart';
 import './styles.css';
 
 function App() {
@@ -15,15 +16,50 @@ function App() {
 		priceRange: '$0.00-$0.00'
 	});
 
+	// Chart type selection state
+	const [chartType, setChartType] = React.useState('pixi'); // 'pixi' or 'viewport'
+
 	const handlePerformanceUpdate = React.useCallback((data) => {
 		setPerformanceData(data);
+	}, []);
+
+	const handleChartTypeChange = React.useCallback((event) => {
+		setChartType(event.target.value);
+		console.log('📊 Chart type changed to:', event.target.value);
 	}, []);
 
 	return (
 		<div className="app-container">					
 			{/* Header */}
 			<div className="app-header">
-				<span>Professional Trading Chart</span>
+				<div className="header-left">
+					<span>Professional Trading Chart</span>
+					
+					{/* Chart Type Selection */}
+					<div className="chart-type-selector">
+						<label className="radio-option">
+							<input
+								type="radio"
+								name="chartType"
+								value="pixi"
+								checked={chartType === 'pixi'}
+								onChange={handleChartTypeChange}
+							/>
+							<span className="radio-label">🚀 PIXI.js</span>
+						</label>
+						<label className="radio-option">
+							<input
+								type="radio"
+								name="chartType"
+								value="viewport"
+								checked={chartType === 'viewport'}
+								onChange={handleChartTypeChange}
+							/>
+							<span className="radio-label">🎮 Viewport</span>
+						</label>
+					</div>
+				</div>
+				
 				<div className="performance-metrics">
 					<span className="render-time">🚀 Render: {performanceData.renderTime}ms</span>
 					<span className="fps">📊 FPS: {performanceData.fps}</span>
@@ -35,9 +71,13 @@ function App() {
 				</div>
 			</div>
 			
-			{/* Full Screen Stock Chart */}
+			{/* Conditional Chart Rendering */}
 			<div className="chart-container">
-				<StockChart onPerformanceUpdate={handlePerformanceUpdate} />
+				{chartType === 'pixi' ? (
+					<StockChart onPerformanceUpdate={handlePerformanceUpdate} />
+				) : (
+					<ManualViewportStockChart onPerformanceUpdate={handlePerformanceUpdate} />
+				)}
 			</div>
 		</div>
 	);

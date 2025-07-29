@@ -1,25 +1,44 @@
 # PIXI Stock Chart
 
-A **revolutionary high-performance** Turkish-localized stock chart visualization with **ultra-optimized PIXI.js rendering engine**. Features professional trading chart behavior, **single Graphics object strategy**, **batched geometry rendering**, advanced performance monitoring, and **massive dataset support (49K+ candles at 60 FPS)**.
+A **revolutionary high-performance** Turkish-localized stock chart visualization with **ultra-optimized PIXI.js rendering engine**. Features professional trading chart behavior, **dual-mode architecture** (PIXI.js vs Manual Viewport), **smart caching system**, **object pooling**, and **AAA-quality rendering with 60+ FPS performance**.
 
-## 🚀 Latest Performance Revolution (v1.5.0)
+## 🚀 Latest Performance & Quality Revolution (v1.6.0)
 
-### 🔥 **Ultra Performance Optimizations**
-- **Single Graphics Object Strategy**: Revolutionary approach using one masterGraphics object instead of thousands of individual Graphics objects
-- **Batched Geometry Rendering**: All candlesticks rendered in single GPU call with color-based grouping
-- **Instant Rendering**: Eliminated RequestAnimationFrame chunking for 49K+ datasets
-- **Memory Optimized**: Minimal object allocation with ultra-fast cleanup system
-- **GPU-Accelerated**: True WebGL potential unleashed with batched draw calls
-- **60 FPS Achievement**: Smooth 60 FPS performance with massive datasets (49,072 candles)
+### 🔥 **Dual Chart System Architecture**
+- **PIXI.js Mode**: Original high-performance implementation with viewport integration
+- **Manual Viewport Mode**: Custom viewport system avoiding pixi-viewport conflicts
+- **Radio Button Selection**: User-friendly interface for mode switching
+- **Seamless Integration**: Both modes share identical data and styling
 
-### 📊 **Performance Benchmarks**
-- **Before**: 2-3 FPS with 49K candles (performance killer)
-- **After**: 30-60 FPS with 49K candles (revolutionary improvement)
-- **Rendering Strategy**: Single Graphics object vs 49K separate objects
-- **GPU Efficiency**: 100x fewer draw calls with batched geometry
-- **Memory Usage**: 90% reduction in object allocation
+### ⚡ **AAA Professional Quality & Performance**
+- **Smart Render Caching**: Hash-based cache system preventing unnecessary redraws
+- **Object Pooling**: Graphics object reuse for memory optimization
+- **High-DPI Support**: Crystal clear rendering on all display types
+- **Antialiasing Enabled**: Smooth edges and professional appearance
+- **GPU Acceleration**: Dedicated GPU usage with power preference settings
+- **Batched Geometry**: Single draw calls for maximum performance
+
+### 🎯 **Smart Interaction System**
+- **Movement Thresholds**: Only redraw on significant changes (>0.1px)
+- **Zoom Thresholds**: Smart zoom detection (>0.001 change)
+- **Cache Hit Detection**: Console logging for performance monitoring
+- **Smooth Interactions**: Lag-free pan and zoom operations
 
 ## 🚀 Features
+
+### Dual Chart Architecture
+- **PIXI.js Mode**: High-performance chart with integrated viewport system
+- **Manual Viewport Mode**: Custom viewport avoiding pixi-viewport ticker conflicts
+- **Radio Button Interface**: Easy switching between chart modes
+- **Identical Functionality**: Both modes support full feature set
+
+### Performance & Quality
+- **Smart Render Caching**: Hash-based system preventing unnecessary redraws
+- **Object Pooling**: Graphics object reuse for optimal memory management
+- **AAA Visual Quality**: High-DPI support with antialiasing enabled
+- **60+ FPS Performance**: Smooth rendering across all interaction patterns
+- **GPU Acceleration**: Dedicated GPU usage with optimized settings
+- **Professional Rendering**: Batched geometry for maximum efficiency
 
 ### Core Chart Features
 - **Professional Trading Behavior**: Latest-data-first display like professional trading platforms
@@ -27,25 +46,10 @@ A **revolutionary high-performance** Turkish-localized stock chart visualization
   - X-axis: Turkish month names (16 Tem, 15 Haz, etc.)
   - CrossHair: 24-hour time format (HH:MM)
 - **Interactive Candlestick Charts**: Professional-grade stock price visualization
-- **SVG-Based Grid System**: Professional trading chart grid patterns with major/minor lines
-- **Dynamic Axis Sizing**: Responsive axis dimensions based on content and container size
-- **Hybrid Crosshair System**: SVG overlay with PIXI.js rendering for optimal performance
-- **Smart Candle Snapping**: Crosshair automatically snaps to candle centers
-- **Real-time Price Tracking**: Live price and date display with golden crosshair
-- **Pan & Zoom**: Smooth navigation with mouse and wheel interactions
-- **Fully Responsive Design**: Eliminated hardcoded dimensions, adaptive to all screen sizes
-
-### Performance & Visual
-- **🚀 Revolutionary Rendering**: Single Graphics object strategy with batched geometry rendering
-- **⚡ 60 FPS Performance**: Smooth 60 FPS with 49K+ candles using ultra-optimized PIXI.js techniques
-- **🎯 Massive Dataset Support**: Handle 49,072 data points with instant rendering (no chunking needed)
-- **🔥 GPU Optimization**: 100x fewer draw calls with color-based geometry grouping
-- **📊 Real-time Monitoring**: Live FPS, render time, and memory usage tracking
-- **🎨 Professional Grid Pattern**: SVG-based grid system with major/minor lines like professional trading platforms
-- **📏 Dynamic Text Measurement**: Canvas-based text sizing for precise axis dimensions
-- **📱 Responsive Architecture**: Adapts to different screen sizes with throttled resize and dynamic axis sizing
-- **🖱️ Ultra-smooth Interactions**: Lag-free mouse tracking and chart updates
-- **💾 Memory Optimized**: Ultra-fast cleanup system with minimal object allocation
+- **Dynamic Candlestick Sizing**: Intelligent scaling based on zoom level
+- **DOJI Candle Support**: Perfect 1px line rendering for DOJI patterns
+- **Never-Disappearing Candles**: Visibility guaranteed at all zoom levels
+- **Professional Wick Rendering**: Proper wick visibility across all scales
 
 ### Technical Architecture
 - **DRY Architecture**: Centralized AxisUtils.js following Don't Repeat Yourself principles
